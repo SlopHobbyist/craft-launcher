@@ -70,6 +70,11 @@ func DownloadAssets(assetIndexDetails AssetIndex, gameDir string) error {
 }
 
 func downloadFile(url, dest string) error {
+	// Ensure parent directory exists
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		return fmt.Errorf("failed to create dir for %s: %w", dest, err)
+	}
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
