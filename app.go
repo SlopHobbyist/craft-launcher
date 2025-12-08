@@ -58,6 +58,9 @@ func (a *App) LaunchGame(username string) string {
 		StatusCallback: func(status string) {
 			runtime.EventsEmit(a.ctx, "update-status", status)
 		},
+		LogCallback: func(data string) {
+			runtime.EventsEmit(a.ctx, "log-data", data)
+		},
 	}
 
 	go func() {

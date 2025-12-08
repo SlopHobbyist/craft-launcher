@@ -14,6 +14,14 @@ type LaunchOptions struct {
 	RamMB          int
 	VersionID      string
 	StatusCallback func(string)
+	LogCallback    func(string)
+}
+
+// writerFunc adapts a function to io.Writer
+type writerFunc func(p []byte) (n int, err error)
+
+func (f writerFunc) Write(p []byte) (n int, err error) {
+	return f(p)
 }
 
 // Launch prepares and executes the Minecraft command
@@ -24,11 +32,18 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 		}
 	}
 
+	reportLog := func(msg string) {
+		if opts.LogCallback != nil {
+			opts.LogCallback(msg)
+		}
+	}
+
 	// 1. Get Java
 	report("Checking Java...")
 	javaPath, err := EnsureJava(opts.GameDir)
 	if err != nil {
 		fmt.Printf("Warning: Could not auto-download Java, trying system java: %v\n", err)
+		reportLog(fmt.Sprintf("Warning: Could not auto-download Java, trying system java: %v\n", err))
 		javaPath = "java"
 	}
 
@@ -79,6 +94,7 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 	report("Checking for Native Patches...")
 	if err := PatchNatives(nativesDir); err != nil {
 		fmt.Printf("Warning: Failed to apply M1 patches: %v\n", err)
+		reportLog(fmt.Sprintf("Warning: Failed to apply M1 patches: %v\n", err))
 	}
 
 	// Arguments construction
@@ -116,10 +132,21 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 	// 5. Execute
 	report("Launching...")
 	fmt.Printf("Executing: %s %v\n", javaPath, args)
+	reportLog(fmt.Sprintf("Executing: %s %v\n", javaPath, args))
+
 	cmd := exec.Command(javaPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	cmd.Dir = opts.GameDir
+
+	// Capture output
+	// We want to write to stdout AND calling callback
+	logWriter := writerFunc(func(p []byte) (n int, err error) {
+		os.Stdout.Write(p) // Echo to real stdout
+		reportLog(string(p))
+		return len(p), nil
+	})
+
+	cmd.Stdout = logWriter
+	cmd.Stderr = logWriter
 
 	if err := cmd.Start(); err != nil {
 		return nil, err

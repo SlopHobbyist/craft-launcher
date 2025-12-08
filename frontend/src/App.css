@@ -26,7 +26,7 @@ body {
   padding: 2rem;
   border-radius: 12px;
   width: 400px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
@@ -110,4 +110,92 @@ body {
   margin-top: 1.5rem;
   font-size: 0.8rem;
   color: var(--secondary-text);
+}
+
+/* Console Stlyes */
+.console-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: none;
+  /* Let clicks pass through to game if needed, but here we want interaction with console */
+  pointer-events: auto;
+}
+
+.console-window {
+  width: 80%;
+  height: 80%;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.console-header {
+  padding: 10px 15px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-weight: bold;
+  color: #ccc;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.console-content {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  text-align: left;
+}
+
+.log-line {
+  margin-bottom: 2px;
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aaa;
+  font-size: 0.9em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input {
+  cursor: pointer;
 }

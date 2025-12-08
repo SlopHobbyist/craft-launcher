@@ -2,27 +2,41 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { LaunchGame } from "../wailsjs/go/main/App";
 import { EventsOn, EventsOff } from "../wailsjs/runtime";
+import { Console } from "./components/Console";
 
 function App() {
     const [status, setStatus] = useState("Ready to Launch");
     const [username, setUsername] = useState("Player");
+    const [showLog, setShowLog] = useState(false);
+    const [logs, setLogs] = useState<string[]>([]);
+    const [isConsoleOpen, setIsConsoleOpen] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = EventsOn("update-status", (msg: string) => {
+        const unsubscribeStatus = EventsOn("update-status", (msg: string) => {
             setStatus(msg);
+            if (msg === "Crashed") {
+                setIsConsoleOpen(true);
+            }
         });
+
+        const unsubscribeLogs = EventsOn("log-data", (msg: string) => {
+            setLogs(prev => [...prev, msg]);
+        });
+
         return () => {
-            // EventsOn returns a cleanup function, or we can use EventsOff if we knew the handler ref, 
-            // but wailsjs runtime.d.ts says EventsOn returns () => void.
-            unsubscribe();
+            unsubscribeStatus();
+            unsubscribeLogs();
         };
     }, []);
 
     const launch = () => {
         setStatus("Launching...");
+        setLogs([]); // Clear logs on new launch
+        if (showLog) {
+            setIsConsoleOpen(true);
+        }
         LaunchGame(username).then((result) => {
             // result is "Launching..." usually, status updates will come via events
-            // setStatus(result); // Don't override event status
         });
     };
 
@@ -43,6 +57,17 @@ function App() {
                 </div>
 
                 <div className="actions">
+                    <div className="options">
+                        <label className="checkbox-label">
+                            <input
+                                type="checkbox"
+                                checked={showLog}
+                                onChange={(e) => setShowLog(e.target.checked)}
+                            />
+                            Show Log
+                        </label>
+                    </div>
+
                     <button className="btn secondary" disabled>
                         CHECK FOR UPDATES
                     </button>
@@ -55,6 +80,13 @@ function App() {
                     STATUS: {status}
                 </div>
             </div>
+
+            {isConsoleOpen && (
+                <Console
+                    logs={logs}
+                    onClose={() => setIsConsoleOpen(false)}
+                />
+            )}
         </div>
     )
 }
