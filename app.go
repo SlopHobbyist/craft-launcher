@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -53,14 +55,33 @@ func (a *App) LaunchGame(username string) string {
 		GameDir:   gameDir,
 		RamMB:     2048,
 		VersionID: "1.8.9",
+		StatusCallback: func(status string) {
+			runtime.EventsEmit(a.ctx, "update-status", status)
+		},
 	}
 
 	go func() {
 		// Launch is blocking in terms of download, but run.go's Run() starts command non-blocking.
 		// However, we want to run the whole logic in background so GUI doesn't freeze during download.
 		fmt.Printf("Starting launch for %s...\n", username)
-		if err := launcher.Launch(opts); err != nil {
+		cmd, err := launcher.Launch(opts)
+		if err != nil {
 			fmt.Printf("Error launching: %v\n", err)
+			runtime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Error: %v", err))
+			return
+		}
+
+		runtime.EventsEmit(a.ctx, "update-status", "Running")
+
+		// Wait for game to exit
+		if err := cmd.Wait(); err != nil {
+			fmt.Printf("Game process exited with error: %v\n", err)
+			// Decide if we want to show "Crashed" or just "Ready"
+			// Usually non-zero exit means crash or force quit
+			runtime.EventsEmit(a.ctx, "update-status", "Crashed")
+		} else {
+			fmt.Printf("Game process exited normally\n")
+			runtime.EventsEmit(a.ctx, "update-status", "Ready to Launch")
 		}
 	}()
 

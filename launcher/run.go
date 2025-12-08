@@ -9,15 +9,23 @@ import (
 )
 
 type LaunchOptions struct {
-	Username  string
-	GameDir   string
-	RamMB     int
-	VersionID string
+	Username       string
+	GameDir        string
+	RamMB          int
+	VersionID      string
+	StatusCallback func(string)
 }
 
 // Launch prepares and executes the Minecraft command
-func Launch(opts LaunchOptions) error {
+func Launch(opts LaunchOptions) (*exec.Cmd, error) {
+	report := func(msg string) {
+		if opts.StatusCallback != nil {
+			opts.StatusCallback(msg)
+		}
+	}
+
 	// 1. Get Java
+	report("Checking Java...")
 	javaPath, err := EnsureJava(opts.GameDir)
 	if err != nil {
 		fmt.Printf("Warning: Could not auto-download Java, trying system java: %v\n", err)
@@ -25,44 +33,50 @@ func Launch(opts LaunchOptions) error {
 	}
 
 	// 2. Load Manifest & Package
+	report("Fetching Version Manifest...")
 	manifest, err := GetVersionManifest()
 	if err != nil {
-		return fmt.Errorf("failed to get manifest: %w", err)
+		return nil, fmt.Errorf("failed to get manifest: %w", err)
 	}
 
 	versionURL, err := manifest.FindVersionURL(opts.VersionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	report("Fetching Package Info...")
 	pkg, err := GetPackage(versionURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 3. Download Everything (Blocking for now, should be progress-reported)
 	// TODO: report progress
+	report("Downloading Assets...")
 	err = DownloadAssets(pkg.AssetIndex, opts.GameDir)
 	if err != nil {
-		return fmt.Errorf("assets error: %w", err)
+		return nil, fmt.Errorf("assets error: %w", err)
 	}
 
+	report("Downloading Libraries...")
 	cp, err := DownloadLibraries(pkg.Libraries, opts.GameDir)
 	if err != nil {
-		return fmt.Errorf("libs error: %w", err)
+		return nil, fmt.Errorf("libs error: %w", err)
 	}
 
 	// 4. Construct Arguments
 	// Add client jar to classpath
+	report("Downloading Client Jar...")
 	clientJarPath := filepath.Join(opts.GameDir, "versions", pkg.ID, pkg.ID+".jar")
 	if err := downloadFile(pkg.Downloads.Client.URL, clientJarPath); err != nil {
-		return fmt.Errorf("client jar download failed: %w", err)
+		return nil, fmt.Errorf("client jar download failed: %w", err)
 	}
 	realCp := cp + string(os.PathListSeparator) + clientJarPath
 
 	nativesDir := filepath.Join(opts.GameDir, "natives")
 
 	// Apply M1 Patches if needed
+	report("Checking for Native Patches...")
 	if err := PatchNatives(nativesDir); err != nil {
 		fmt.Printf("Warning: Failed to apply M1 patches: %v\n", err)
 	}
@@ -100,11 +114,15 @@ func Launch(opts LaunchOptions) error {
 	args = append(args, strings.Split(mcArgs, " ")...)
 
 	// 5. Execute
+	report("Launching...")
 	fmt.Printf("Executing: %s %v\n", javaPath, args)
 	cmd := exec.Command(javaPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = opts.GameDir
 
-	return cmd.Start() // Non-blocking start
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	return cmd, nil
 }
