@@ -23,7 +23,14 @@ var jreDownloadURLs = map[string]string{
 }
 
 func EnsureJava(gameDir string) (string, error) {
-	jreDir := filepath.Join(gameDir, fmt.Sprintf("jre-%s-%s", runtime.GOOS, runtime.GOARCH))
+	// For macOS ARM64, we MUST use x86_64 Java because Minecraft 1.8.9 natives (LWJGL 2) are x86 only.
+	// Rosetta will handle the translation.
+	arch := runtime.GOARCH
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		arch = "amd64"
+	}
+
+	jreDir := filepath.Join(gameDir, fmt.Sprintf("jre-%s-%s", runtime.GOOS, arch))
 
 	// Check if exists
 	if execPath := findJavaExecutable(jreDir); execPath != "" {
@@ -32,7 +39,7 @@ func EnsureJava(gameDir string) (string, error) {
 
 	// Download
 	fmt.Println("JRE not found, downloading...")
-	if err := downloadAndInstallJRE(gameDir, jreDir); err != nil {
+	if err := downloadAndInstallJRE(gameDir, jreDir, arch); err != nil {
 		return "", err
 	}
 
@@ -75,8 +82,8 @@ func findJavaExecutable(jrePath string) string {
 	return found
 }
 
-func downloadAndInstallJRE(baseDir, jrePath string) error {
-	key := fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
+func downloadAndInstallJRE(baseDir, jrePath, arch string) error {
+	key := fmt.Sprintf("%s-%s", runtime.GOOS, arch)
 	url, ok := jreDownloadURLs[key]
 	if !ok {
 		return fmt.Errorf("unsupported platform for auto-java: %s", key)
