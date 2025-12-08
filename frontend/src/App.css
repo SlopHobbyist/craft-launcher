@@ -152,12 +152,34 @@ body {
   color: #ccc;
 }
 
+.console-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-btn {
+  background: #333;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.action-btn:hover {
+  background: #444;
+  color: white;
+}
+
 .close-btn {
   background: none;
   border: none;
   color: #ccc;
   font-size: 20px;
   cursor: pointer;
+  line-height: 1;
 }
 
 .close-btn:hover {
