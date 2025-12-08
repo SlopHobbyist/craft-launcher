@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -92,21 +93,55 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 
 	// Apply M1 Patches if needed
 	report("Checking for Native Patches...")
-	if err := PatchNatives(nativesDir); err != nil {
-		fmt.Printf("Warning: Failed to apply M1 patches: %v\n", err)
-		reportLog(fmt.Sprintf("Warning: Failed to apply M1 patches: %v\n", err))
+	// Use new library check that handles fat jars
+	if err := EnsureM1Libraries(opts.GameDir); err != nil {
+		fmt.Printf("Warning: Failed to ensure M1 libraries: %v\n", err)
+		reportLog(fmt.Sprintf("Warning: Failed to ensure M1 libraries: %v\n", err))
 	}
 
 	// Arguments construction
 	// 1.8.9 uses "minecraftArguments" string, newer versions use "arguments" object.
 	// We focus on 1.8.9 here.
 
+	// M1 Specific Classpath Rewrite
+	var finalCp string
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// Filter out vanilla lwjgl jars
+		var jars []string
+		for _, j := range strings.Split(realCp, string(os.PathListSeparator)) {
+			base := filepath.Base(j)
+			// Remove vanilla lwjgl, lwjgl-platform, lwjgl_util, twitch, and jinput
+			if !strings.Contains(base, "lwjgl-2") && !strings.Contains(base, "lwjgl-platform-2") && !strings.Contains(base, "lwjgl_util-2") && !strings.Contains(base, "twitch") && !strings.Contains(base, "jinput") {
+				jars = append(jars, j)
+			}
+		}
+
+		// Add fat jars
+		m1Libs := filepath.Join(opts.GameDir, "m1_libs")
+		jars = append(jars, filepath.Join(m1Libs, "lwjglfat.jar"))
+		jars = append(jars, filepath.Join(m1Libs, "lwjgl_util.jar"))
+
+		finalCp = strings.Join(jars, string(os.PathListSeparator))
+		reportLog("Applied M1 Classpath Patches")
+	} else {
+		finalCp = realCp
+	}
+
 	args := []string{
 		fmt.Sprintf("-Xmx%dM", opts.RamMB),
 		fmt.Sprintf("-Djava.library.path=%s", nativesDir),
-		"-cp", realCp,
-		pkg.MainClass,
 	}
+
+	// Critical fix for macOS (especially M1/M2) to prevent crashes with LWJGL 2
+	// Now safe to use because we have swapped valid fat jars
+	if runtime.GOOS == "darwin" {
+		args = append(args, "-XstartOnFirstThread")
+	}
+
+	args = append(args,
+		"-cp", finalCp,
+		pkg.MainClass,
+	)
 
 	// Parse minecraftArguments template
 	// e.g. "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userProperties ${user_properties} --userType ${user_type}"
@@ -128,6 +163,9 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 	}
 
 	args = append(args, strings.Split(mcArgs, " ")...)
+
+	// Force default window size to stabilize startup resize behavior
+	args = append(args, "--width", "854", "--height", "480")
 
 	// 5. Execute
 	report("Launching...")
