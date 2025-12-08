@@ -41,16 +41,20 @@ func EnsureJava(gameDir string) (string, error) {
 }
 
 func findJavaExecutable(jrePath string) string {
-	javaExecName := "java"
+	// On Windows, prefer javaw.exe (no console) over java.exe
+	targetExecs := []string{"java"}
 	if runtime.GOOS == "windows" {
-		javaExecName = "java.exe"
+		targetExecs = []string{"javaw.exe", "java.exe"}
 	}
 
 	// Common paths
-	possiblePaths := []string{
-		filepath.Join(jrePath, "bin", javaExecName),
-		filepath.Join(jrePath, "Contents", "Home", "bin", javaExecName),
-		filepath.Join(jrePath, "zulu-8.jdk", "Contents", "Home", "bin", javaExecName), // Mac structure sometimes
+	var possiblePaths []string
+	for _, execName := range targetExecs {
+		possiblePaths = append(possiblePaths,
+			filepath.Join(jrePath, "bin", execName),
+			filepath.Join(jrePath, "Contents", "Home", "bin", execName),
+			filepath.Join(jrePath, "zulu-8.jdk", "Contents", "Home", "bin", execName),
+		)
 	}
 
 	for _, p := range possiblePaths {
@@ -65,10 +69,18 @@ func findJavaExecutable(jrePath string) string {
 		if err != nil {
 			return nil
 		}
-		if !info.IsDir() && info.Name() == javaExecName {
-			if strings.Contains(path, "bin") {
-				found = path
-				return filepath.SkipAll
+		if !info.IsDir() {
+			name := info.Name()
+			for _, target := range targetExecs {
+				if name == target {
+					if strings.Contains(path, "bin") {
+						found = path
+						// If we found the best candidate (first one), stop immediately
+						if target == targetExecs[0] {
+							return filepath.SkipAll
+						}
+					}
+				}
 			}
 		}
 		return nil
