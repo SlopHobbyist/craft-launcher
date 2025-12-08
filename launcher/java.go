@@ -23,14 +23,8 @@ var jreDownloadURLs = map[string]string{
 }
 
 func EnsureJava(gameDir string) (string, error) {
-	// For macOS ARM64, we MUST use x86_64 Java because Minecraft 1.8.9 natives (LWJGL 2) are x86 only.
-	// Rosetta will handle the translation.
-	arch := runtime.GOARCH
-	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		arch = "amd64"
-	}
-
-	jreDir := filepath.Join(gameDir, fmt.Sprintf("jre-%s-%s", runtime.GOOS, arch))
+	// Reverted to native architecture (arm64 on M1) because we are now patching the natives.
+	jreDir := filepath.Join(gameDir, fmt.Sprintf("jre-%s-%s", runtime.GOOS, runtime.GOARCH))
 
 	// Check if exists
 	if execPath := findJavaExecutable(jreDir); execPath != "" {
@@ -39,7 +33,7 @@ func EnsureJava(gameDir string) (string, error) {
 
 	// Download
 	fmt.Println("JRE not found, downloading...")
-	if err := downloadAndInstallJRE(gameDir, jreDir, arch); err != nil {
+	if err := downloadAndInstallJRE(gameDir, jreDir, runtime.GOARCH); err != nil {
 		return "", err
 	}
 

@@ -62,6 +62,11 @@ func Launch(opts LaunchOptions) error {
 
 	nativesDir := filepath.Join(opts.GameDir, "natives")
 
+	// Apply M1 Patches if needed
+	if err := PatchNatives(nativesDir); err != nil {
+		fmt.Printf("Warning: Failed to apply M1 patches: %v\n", err)
+	}
+
 	// Arguments construction
 	// 1.8.9 uses "minecraftArguments" string, newer versions use "arguments" object.
 	// We focus on 1.8.9 here.
