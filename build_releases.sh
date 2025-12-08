@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Ensure we can find 'wails' if it's in the standard Go bin location
+export PATH=$PATH:$HOME/go/bin
+
 APP_NAME="craft-launcher"
 BUILD_DIR="build/bin"
 
