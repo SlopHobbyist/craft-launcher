@@ -163,6 +163,10 @@ Create a file named `.server_url` in the project root (this file is gitignored f
 
 The build scripts will read this URL and "bake" it into the launcher executable.
 
+### Update Server Infrastructure
+The server-side components (docker config, manifest generator) are located in the `craftlauncher-server-side/` directory.
+See [craftlauncher-server-side/README.md](craftlauncher-server-side/README.md) for instructions on how to deploy and manage your modpack updates.
+
 ### User Data
 The integrity check preserves user-specific files to avoid overwriting settings:
 - `options.txt` (and variants)

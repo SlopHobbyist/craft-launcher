@@ -11,4 +11,5 @@ type FileInfo struct {
 	Path     string `json:"path"`
 	Size     int64  `json:"size"`
 	Checksum string `json:"checksum"`
+	Override bool   `json:"override"`
 }

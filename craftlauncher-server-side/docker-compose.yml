@@ -1,0 +1,11 @@
+services:
+  modpack-server:
+    image: nginx:alpine
+    container_name: modpack-server
+    ports:
+      - "8090:80"
+    volumes:
+      - ./modpack:/usr/share/nginx/html/files
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./generate-manifest.sh:/docker-entrypoint.d/90-generate-manifest.sh:ro
+    restart: unless-stopped

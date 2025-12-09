@@ -49,6 +49,12 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 	// 3. Update or Verify
 	if serverManifest.Version > currentVersion {
 		statusCallback(fmt.Sprintf("New update found (v%d). Downloading...", serverManifest.Version))
+
+		// Clean up old files that are not in the new manifest
+		if localManifest != nil {
+			cleanupOldFiles(gameDir, localManifest, serverManifest, statusCallback)
+		}
+
 		if err := syncingUpdate(gameDir, serverManifest, statusCallback); err != nil {
 			return err
 		}
@@ -111,6 +117,17 @@ func fetchManifest() (*Manifest, error) {
 
 func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
 	for i, file := range manifest.Files {
+		// If file exists and override is false, skip it (preserve user data)
+		// We only download if it's missing entirely
+		localPath := filepath.Join(gameDir, file.Path)
+		if !file.Override {
+			if _, err := os.Stat(localPath); err == nil {
+				// File exists, skipping
+				// cb(fmt.Sprintf("Skipping user file: %s", file.Path))
+				continue
+			}
+		}
+
 		cb(fmt.Sprintf("Downloading [%d/%d]: %s", i+1, len(manifest.Files), file.Path))
 
 		if err := downloadFile(gameDir, file); err != nil {
@@ -131,6 +148,12 @@ func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
 
 func verifyAndRepair(gameDir string, manifest *Manifest, cb func(string)) error {
 	for _, file := range manifest.Files {
+		// If override is false, we don't enforce integrity on existing files
+		// This protects user options from being reset
+		if !file.Override {
+			continue
+		}
+
 		valid, err := verifyFileChecksum(gameDir, file)
 		if err != nil {
 			// Might be missing
@@ -145,6 +168,26 @@ func verifyAndRepair(gameDir string, manifest *Manifest, cb func(string)) error 
 		}
 	}
 	return nil
+}
+
+func cleanupOldFiles(gameDir string, oldManifest *Manifest, newManifest *Manifest, cb func(string)) {
+	// Create map of new files for quick lookup
+	newFiles := make(map[string]bool)
+	for _, f := range newManifest.Files {
+		newFiles[f.Path] = true
+	}
+
+	for _, oldFile := range oldManifest.Files {
+		// If old file is NOT in the new manifest, delete it
+		if !newFiles[oldFile.Path] {
+			cb(fmt.Sprintf("Removing obsolete file: %s", oldFile.Path))
+			fullPath := filepath.Join(gameDir, oldFile.Path)
+			if err := os.Remove(fullPath); err != nil {
+				// Warn but don't fail update
+				fmt.Printf("Warning: Failed to remove %s: %v\n", fullPath, err)
+			}
+		}
+	}
 }
 
 func downloadFile(gameDir string, file FileInfo) error {
