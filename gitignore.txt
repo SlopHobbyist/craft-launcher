@@ -74,3 +74,7 @@ assets/
 # Bundled data
 bundled/*
 !bundled/README.txt
+
+
+# Wails build output icon
+build/appicon.png
