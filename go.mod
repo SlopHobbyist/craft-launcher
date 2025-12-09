@@ -2,7 +2,10 @@ module craft-launcher
 
 go 1.23
 
-require github.com/wailsapp/wails/v2 v2.11.0
+require (
+	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
+	github.com/wailsapp/wails/v2 v2.11.0
+)
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect

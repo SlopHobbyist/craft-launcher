@@ -2,19 +2,25 @@ import { useEffect, useRef } from 'react';
 import { ClipboardSetText } from "../../wailsjs/runtime";
 
 interface ConsoleProps {
+    statusHistory: string[];
     logs: string[];
     onClose: () => void;
 }
 
-export function Console({ logs, onClose }: ConsoleProps) {
+export function Console({ statusHistory, logs, onClose }: ConsoleProps) {
     const endRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [logs]);
+    }, [logs, statusHistory]);
 
     const copyToClipboard = () => {
-        ClipboardSetText(logs.join(""));
+        let allLogs = statusHistory.join("\n");
+        if (statusHistory.length > 0 && logs.length > 0) {
+            allLogs += "\n--- GAME OUTPUT ---\n";
+        }
+        allLogs += logs.join("");
+        ClipboardSetText(allLogs);
     };
 
     return (
@@ -28,8 +34,14 @@ export function Console({ logs, onClose }: ConsoleProps) {
                     </div>
                 </div>
                 <div className="console-content">
+                    {statusHistory.map((line, i) => (
+                        <div key={`status-${i}`} className="log-line launcher-status">{line}</div>
+                    ))}
+                    {statusHistory.length > 0 && logs.length > 0 && (
+                        <div className="log-separator">--- GAME OUTPUT ---</div>
+                    )}
                     {logs.map((line, i) => (
-                        <div key={i} className="log-line">{line}</div>
+                        <div key={`log-${i}`} className="log-line">{line}</div>
                     ))}
                     <div ref={endRef} />
                 </div>

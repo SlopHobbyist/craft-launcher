@@ -55,7 +55,7 @@ body {
   letter-spacing: 1px;
 }
 
-.username-input {
+.username-input, .ram-input {
   width: 100%;
   padding: 10px;
   background: #333;
@@ -66,9 +66,22 @@ body {
   box-sizing: border-box;
 }
 
-.username-input:focus {
+.username-input:focus, .ram-input:focus {
   outline: none;
   border-color: var(--accent-color);
+}
+
+.ram-input:disabled {
+  background: #252525;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.ram-info {
+  font-size: 0.65rem;
+  color: #888;
+  font-weight: 400;
+  margin-left: 5px;
 }
 
 .actions {
@@ -202,9 +215,25 @@ body {
   margin-bottom: 2px;
 }
 
+.launcher-status {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.log-separator {
+  margin: 10px 0;
+  padding: 5px 0;
+  color: #888;
+  font-weight: bold;
+  text-align: center;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
+}
+
 .options {
   display: flex;
   align-items: center;
+  gap: 10px;
   margin-right: 15px;
 }
 
@@ -220,4 +249,23 @@ body {
 
 .checkbox-label input {
   cursor: pointer;
+}
+
+.btn-show-log {
+  background-color: #444;
+  border: 1px solid #555;
+  color: #ccc;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.btn-show-log:hover {
+  background-color: #555;
+  color: white;
+  border-color: #666;
 }

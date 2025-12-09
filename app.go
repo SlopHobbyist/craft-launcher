@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/pbnjay/memory"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -21,14 +22,51 @@ func NewApp() *App {
 	return &App{}
 }
 
+// SystemInfo holds system information for the frontend
+type SystemInfo struct {
+	TotalRAM    uint64 `json:"totalRAM"`    // Total RAM in MiB
+	Is32Bit     bool   `json:"is32Bit"`     // Whether running 32-bit
+	DefaultRAM  int    `json:"defaultRAM"`  // Default RAM allocation in MiB
+	MinRAM      int    `json:"minRAM"`      // Minimum RAM in MiB
+	MaxRAM      int    `json:"maxRAM"`      // Maximum RAM in MiB
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
+// GetSystemInfo returns system information for RAM configuration
+func (a *App) GetSystemInfo() SystemInfo {
+	totalRAM := memory.TotalMemory() / (1024 * 1024) // Convert to MiB
+	is32Bit := runtime.GOARCH == "386"
+
+	var defaultRAM, minRAM, maxRAM int
+
+	if is32Bit {
+		// 32-bit Windows has strict limitations
+		defaultRAM = 1024 // 1 GiB
+		minRAM = 256      // 0.25 GiB
+		maxRAM = 1024     // 1 GiB
+	} else {
+		// 64-bit systems
+		defaultRAM = 2048        // 2 GiB
+		minRAM = 2048            // 2 GiB
+		maxRAM = int(totalRAM)   // System max
+	}
+
+	return SystemInfo{
+		TotalRAM:   totalRAM,
+		Is32Bit:    is32Bit,
+		DefaultRAM: defaultRAM,
+		MinRAM:     minRAM,
+		MaxRAM:     maxRAM,
+	}
+}
+
 // LaunchGame starts the game
-func (a *App) LaunchGame(username string) string {
+func (a *App) LaunchGame(username string, ramMB int) string {
 	// Portable: Use the directory of the executable
 	exePath, err := os.Executable()
 	if err != nil {
@@ -51,11 +89,13 @@ func (a *App) LaunchGame(username string) string {
 		return fmt.Sprintf("Error creating game dir: %v", err)
 	}
 
-	// Determine RAM allocation based on architecture
-	// 32-bit processes can't allocate 2GB heap due to address space limitations
-	ramMB := 2048
-	if runtime.GOARCH == "386" {
-		ramMB = 1024 // 1GB for 32-bit Windows
+	// Validate RAM allocation
+	sysInfo := a.GetSystemInfo()
+	if ramMB < sysInfo.MinRAM {
+		ramMB = sysInfo.MinRAM
+	}
+	if ramMB > sysInfo.MaxRAM {
+		ramMB = sysInfo.MaxRAM
 	}
 
 	opts := launcher.LaunchOptions{
@@ -74,6 +114,17 @@ func (a *App) LaunchGame(username string) string {
 	go func() {
 		// Launch is blocking in terms of download, but run.go's Run() starts command non-blocking.
 		// However, we want to run the whole logic in background so GUI doesn't freeze during download.
+
+		// Log platform information for debugging as status messages
+		wailsruntime.EventsEmit(a.ctx, "update-status", "=== PLATFORM INFO ===")
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("OS: %s", runtime.GOOS))
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Architecture: %s", runtime.GOARCH))
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Username: %s", username))
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("RAM Allocation: %d GiB (%d MiB)", ramMB/1024, ramMB))
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("System RAM: %d GiB (%d MiB)", sysInfo.TotalRAM/1024, sysInfo.TotalRAM))
+		wailsruntime.EventsEmit(a.ctx, "update-status", "Version: 1.8.9")
+		wailsruntime.EventsEmit(a.ctx, "update-status", "=====================")
+
 		fmt.Printf("Starting launch for %s...\n", username)
 		cmd, err := launcher.Launch(opts)
 		if err != nil {
