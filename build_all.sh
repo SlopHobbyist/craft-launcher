@@ -14,7 +14,7 @@ echo "Building $APP_NAME for all platforms"
 echo "==========================================="
 echo ""
 
-# Process icons if source files exist
+# Process icons
 if [ -f "icons/source/launcher-icon.png" ]; then
     echo "==========================================="
     echo "Processing icons..."
@@ -22,6 +22,17 @@ if [ -f "icons/source/launcher-icon.png" ]; then
     node icons/process-icons.js || echo "⚠ Icon processing skipped - continuing build..."
     echo ""
 fi
+
+# Generate Integrity Assets
+echo "==========================================="
+echo "Generating Integrity Assets..."
+echo "==========================================="
+if [ -f "tools/build_integrity.go" ]; then
+    go run tools/build_integrity.go
+else
+    echo "Warning: Integrity tool not found."
+fi
+echo ""
 
 # macOS ARM64 (M1/M2/etc)
 echo "==========================================="

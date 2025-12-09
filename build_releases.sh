@@ -19,6 +19,16 @@ if [ -f "icons/source/launcher-icon.png" ]; then
 fi
 
 echo "==========================================="
+echo "Generating Integrity Assets..."
+echo "==========================================="
+if [ -f "tools/build_integrity.go" ]; then
+    go run tools/build_integrity.go
+else
+    echo "Warning: Integrity tool not found."
+fi
+echo ""
+
+echo "==========================================="
 echo "Building $APP_NAME for macOS (ARM64)"
 echo "==========================================="
 wails build -platform darwin/arm64

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"craft-launcher/launcher"
+	"craft-launcher/launcher/integrity"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -96,6 +97,23 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 	}
 	if ramMB > sysInfo.MaxRAM {
 		ramMB = sysInfo.MaxRAM
+	}
+
+	// Integrity Check
+	wailsruntime.EventsEmit(a.ctx, "update-status", "Verifying File Integrity...")
+	restored, err := integrity.VerifyAndRestore(gameDir)
+	if err != nil {
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Integrity Error: %v", err))
+		return fmt.Sprintf("Integrity Error: %v", err)
+	}
+	if len(restored) > 0 {
+		msg := fmt.Sprintf("Restored %d tampered files", len(restored))
+		wailsruntime.EventsEmit(a.ctx, "update-status", msg)
+		for _, f := range restored {
+			wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf(" - Restored: %s", f))
+		}
+	} else {
+		wailsruntime.EventsEmit(a.ctx, "update-status", "Integrity Check: OK")
 	}
 
 	opts := launcher.LaunchOptions{

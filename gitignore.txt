@@ -78,3 +78,7 @@ bundled/*
 
 # Wails build output icon
 build/appicon.png
+
+# Generated Integrity Assets
+launcher/integrity/embedded_assets/
+launcher/integrity/loader.go
