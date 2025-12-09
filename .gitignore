@@ -79,5 +79,8 @@ bundled/*
 build/appicon.png
 
 # Generated Integrity Assets
-launcher/integrity/embedded_assets/
-launcher/integrity/loader.go
+# Client manifest
+.client_manifest.json
+
+# Server Config
+.server_url

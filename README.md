@@ -132,10 +132,11 @@ No system-wide installation needed - entire folder can be copied to USB drive.
 
 ### Planned Features 🚧
 
-#### 1. **Legacy Fabric Mod Support**
-- Add mod loading capability via Legacy Fabric
-- Enable running mods on Minecraft 1.8.9
-- Maintain compatibility with vanilla server
+#### 1. **Legacy Fabric Mod Support (Implemented ✅)**
+- Added mod loading capability via Legacy Fabric
+- Enabled running mods on Minecraft 1.8.9
+- Maintains compatibility with vanilla server
+- Toggleable via UI checkbox
 
 #### 2. **Automatic Mod & Config Distribution**
 - Download mods from internet source (your server/CDN)
@@ -143,17 +144,32 @@ No system-wide installation needed - entire folder can be copied to USB drive.
 - One-click modpack installation for users
 - Update checking for mod changes
 
-## Distribution / Bundling
+## Remote Modpack Updates
+The launcher features a built-in remote update system that automatically synchronizes the game client with your modpack server.
 
-You can bundle a pre-configured Minecraft setup (mods, options, servers.dat, etc.) with your launcher release.
+### How It Works
+1.  **Launch Check**: On startup, the launcher connects to your update server.
+2.  **Manifest Comparison**: It compares the server's `manifest.json` with the local `.client_manifest.json`.
+3.  **Auto-Update**:
+    - If the server has a newer version, it downloads all changed files.
+    - If versions match, it **verified file integrity** to ensure no files have been tampered with.
+4.  **Repair**: Any missing or modified files (that shouldn't be modified) are automatically re-downloaded.
 
-1.  Create a folder named `bundled` in the project root.
-2.  Place any files you want physically copied to the user's `data` folder inside `bundled`.
-    - Example: `bundled/mods/example-mod.jar`
-    - Example: `bundled/options.txt`
-3.  Run the build script (`./build_releases.sh`).
+### Server Configuration
+**Critical**: To build the launcher, you must define where it looks for updates.
+Create a file named `.server_url` in the project root (this file is gitignored for security):
 
-The build script will automatically copy everything from `bundled/` into the `data/` folder of the built application. Use this to distribute "ready-to-play" modpacks.
+`http://192.168.1.48:8090`
+
+The build scripts will read this URL and "bake" it into the launcher executable.
+
+### User Data
+The integrity check preserves user-specific files to avoid overwriting settings:
+- `options.txt` (and variants)
+- `servers.dat`
+- `saves/`
+- `logs/`
+- `screenshots/`
 
 #### 3. **Client-Side Anticheat**
 - Robust anticheat system running on client

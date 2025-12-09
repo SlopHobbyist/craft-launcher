@@ -99,21 +99,15 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 		ramMB = sysInfo.MaxRAM
 	}
 
-	// Integrity Check
-	wailsruntime.EventsEmit(a.ctx, "update-status", "Verifying File Integrity...")
-	restored, err := integrity.VerifyAndRestore(gameDir)
-	if err != nil {
-		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Integrity Error: %v", err))
-		return fmt.Sprintf("Integrity Error: %v", err)
-	}
-	if len(restored) > 0 {
-		msg := fmt.Sprintf("Restored %d tampered files", len(restored))
+	// Integrity Check & Remote Update
+	statusCallback := func(msg string) {
 		wailsruntime.EventsEmit(a.ctx, "update-status", msg)
-		for _, f := range restored {
-			wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf(" - Restored: %s", f))
-		}
-	} else {
-		wailsruntime.EventsEmit(a.ctx, "update-status", "Integrity Check: OK")
+	}
+
+	if err := integrity.CheckAndUpdate(gameDir, statusCallback); err != nil {
+		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Update Error: %v", err))
+		// We can return the error if we want to block launch on update failure
+		return fmt.Sprintf("Update Error: %v", err)
 	}
 
 	opts := launcher.LaunchOptions{

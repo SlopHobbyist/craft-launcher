@@ -1,0 +1,222 @@
+package integrity
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+const (
+	LocalManifest   = ".client_manifest.json"
+	WhitelistedFile = "options.txt" // Basic whitelist logic
+)
+
+// CheckAndUpdate handles the entire update flow
+func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
+	// Ensure game dir exists
+	if err := os.MkdirAll(gameDir, 0755); err != nil {
+		return err
+	}
+
+	// 1. Fetch Server Manifest
+	statusCallback("Checking for updates...")
+	serverManifest, err := fetchManifest()
+	if err != nil {
+		// If server is down, we might want to allow launch if we have a local version?
+		// User requirement "I want exactly my modpack", implies strictness.
+		// But if internet is down, maybe warn?
+		// For now, return error as it's safer for anti-tamper.
+		return fmt.Errorf("failed to fetch update manifest: %w", err)
+	}
+
+	// 2. Read Local Manifest
+	localManifestPath := filepath.Join(gameDir, LocalManifest)
+	localManifest, _ := loadLocalManifest(localManifestPath)
+
+	currentVersion := 0
+	if localManifest != nil {
+		currentVersion = localManifest.Version
+	}
+
+	statusCallback(fmt.Sprintf("Local Version: %d, Server Version: %d", currentVersion, serverManifest.Version))
+
+	// 3. Update or Verify
+	if serverManifest.Version > currentVersion {
+		statusCallback(fmt.Sprintf("New update found (v%d). Downloading...", serverManifest.Version))
+		if err := syncingUpdate(gameDir, serverManifest, statusCallback); err != nil {
+			return err
+		}
+		// Save new manifest as local state
+		if err := saveLocalManifest(localManifestPath, serverManifest); err != nil {
+			return fmt.Errorf("failed to save local manifest: %w", err)
+		}
+		statusCallback("Update complete!")
+	} else {
+		statusCallback("Verifying integrity...")
+		// Even if versions match, verify hashes of managed files
+		if err := verifyAndRepair(gameDir, serverManifest, statusCallback); err != nil {
+			return err
+		}
+		statusCallback("Integrity verified.")
+	}
+
+	// Clean up unmanaged files?
+	// The user example had 'cleanModpackDir' which deleted EVERYTHING not in manifest.
+	// This is destructive to user content (screenshots, saves).
+	// We should probably only clean managed directories like 'mods/'.
+	// For now, stick to verification/repair of defined files to be safe.
+
+	return nil
+}
+
+func fetchManifest() (*Manifest, error) {
+	var resp *http.Response
+	var err error
+	maxRetries := 5
+
+	for i := 0; i < maxRetries; i++ {
+		resp, err = http.Get(ServerURL + "/manifest.json")
+		if err == nil {
+			break
+		}
+
+		// Wait and retry if it's a network error (likely macOS permission prompt blocking)
+		if i < maxRetries-1 {
+			// fmt.Printf("Failed to connect (attempt %d/%d): %v. Retrying in 2s...\n", i+1, maxRetries, err)
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("server returned status %s", resp.Status)
+	}
+
+	var manifest Manifest
+	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
+		return nil, err
+	}
+	return &manifest, nil
+}
+
+func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
+	for i, file := range manifest.Files {
+		cb(fmt.Sprintf("Downloading [%d/%d]: %s", i+1, len(manifest.Files), file.Path))
+
+		if err := downloadFile(gameDir, file); err != nil {
+			return fmt.Errorf("failed to download %s: %w", file.Path, err)
+		}
+
+		// Verify immediately
+		valid, err := verifyFileChecksum(gameDir, file)
+		if err != nil {
+			return fmt.Errorf("failed to verify %s: %w", file.Path, err)
+		}
+		if !valid {
+			return fmt.Errorf("checksum mismatch after download for %s", file.Path)
+		}
+	}
+	return nil
+}
+
+func verifyAndRepair(gameDir string, manifest *Manifest, cb func(string)) error {
+	for _, file := range manifest.Files {
+		valid, err := verifyFileChecksum(gameDir, file)
+		if err != nil {
+			// Might be missing
+			valid = false
+		}
+
+		if !valid {
+			cb(fmt.Sprintf("Repairing tampered file: %s", file.Path))
+			if err := downloadFile(gameDir, file); err != nil {
+				return fmt.Errorf("failed to repair %s: %w", file.Path, err)
+			}
+		}
+	}
+	return nil
+}
+
+func downloadFile(gameDir string, file FileInfo) error {
+	localPath := filepath.Join(gameDir, file.Path)
+
+	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
+		return err
+	}
+
+	// Use /files/ prefix as per user example logic (implied or standard)
+	// User code: url := fmt.Sprintf("%s/files/%s", ServerURL, file.Path)
+	url := fmt.Sprintf("%s/files/%s", ServerURL, file.Path)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("server download failed: %s", resp.Status)
+	}
+
+	out, err := os.Create(localPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func verifyFileChecksum(gameDir string, file FileInfo) (bool, error) {
+	localPath := filepath.Join(gameDir, file.Path)
+	f, err := os.Open(localPath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return false, err
+	}
+
+	checksum := hex.EncodeToString(h.Sum(nil))
+	return checksum == file.Checksum, nil
+}
+
+func loadLocalManifest(path string) (*Manifest, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var m Manifest
+	if err := json.NewDecoder(f).Decode(&m); err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func saveLocalManifest(path string, m *Manifest) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(m)
+}

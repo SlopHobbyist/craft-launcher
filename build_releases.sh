@@ -9,6 +9,17 @@ export PATH=$PATH:$HOME/go/bin
 APP_NAME="craft-launcher"
 BUILD_DIR="build/bin"
 
+# Read Server URL
+SERVER_URL=""
+if [ -f ".server_url" ]; then
+    SERVER_URL=$(cat .server_url | tr -d '\n\r')
+    echo "Using Server URL: $SERVER_URL"
+else
+    echo "Warning: .server_url not found. Using default."
+fi
+
+LDFLAGS="-X 'craft-launcher/launcher/integrity.ServerURL=$SERVER_URL'"
+
 # Process icons if source files exist
 if [ -f "icons/source/launcher-icon.png" ]; then
     echo "==========================================="
@@ -18,20 +29,11 @@ if [ -f "icons/source/launcher-icon.png" ]; then
     echo ""
 fi
 
-echo "==========================================="
-echo "Generating Integrity Assets..."
-echo "==========================================="
-if [ -f "tools/build_integrity.go" ]; then
-    go run tools/build_integrity.go
-else
-    echo "Warning: Integrity tool not found."
-fi
-echo ""
 
 echo "==========================================="
 echo "Building $APP_NAME for macOS (ARM64)"
 echo "==========================================="
-wails build -platform darwin/arm64
+wails build -platform darwin/arm64 -ldflags "$LDFLAGS"
 
 echo ""
 echo "==========================================="
@@ -40,31 +42,9 @@ echo "==========================================="
 # Note: This requires a C cross-compiler (usually mingw-w64) if specific CGO features are used,
 # but Wails often creates a 'portable' internal build or requires the user to have xcode-select/brew tools.
 # If this fails, install mingw-w64: brew install mingw-w64
-wails build -platform windows/amd64
+wails build -platform windows/amd64 -ldflags "$LDFLAGS"
 
 echo ""
-# Handle Bundled Data
-if [ -d "bundled" ]; then
-    echo "==========================================="
-    echo "Bundling pre-configured data..."
-    echo "==========================================="
-    
-    # For macOS: Copy to .app/Contents/MacOS/data
-    MAC_APP="$BUILD_DIR/$APP_NAME.app"
-    if [ -d "$MAC_APP" ]; then
-        echo "Adding to macOS app..."
-        mkdir -p "$MAC_APP/Contents/MacOS/data"
-        cp -r bundled/* "$MAC_APP/Contents/MacOS/data/"
-    fi
-    
-    # For Windows: Copy to data folder next to exe
-    echo "Adding to Windows build..."
-    mkdir -p "$BUILD_DIR/data"
-    cp -r bundled/* "$BUILD_DIR/data/"
-    
-    echo "✓ Bundled data included"
-    echo ""
-fi
 
 echo "==========================================="
 echo "Build Complete!"
