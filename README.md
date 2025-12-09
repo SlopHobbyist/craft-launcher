@@ -161,6 +161,23 @@ No system-wide installation needed - entire folder can be copied to USB drive.
 
 **Offline Support**: After first launch, no internet required - perfect for LAN parties
 
+## Supported Platforms
+
+Craft Launcher supports the following platforms:
+
+- **Windows**
+  - Windows 7/8/8.1/10/11 (x86-64)
+  - Windows 7/8/8.1/10 (x86 32-bit)
+  - Windows 8/8.1/10/11 (ARM64)
+
+- **macOS**
+  - macOS (Apple Silicon - M1/M2/M3/etc)
+  - macOS (Intel x86-64)
+
+- **Linux**
+  - Linux (x86-64) - Debian, Arch, and popular forks
+  - Linux (ARM64) - Raspberry Pi and other ARM devices
+
 ## Building the Launcher
 
 ### Prerequisites
@@ -179,12 +196,24 @@ wails dev
 wails build
 
 # Build releases (Windows + macOS)
-./build_releases.sh
+./build_releases.sh          # On macOS/Linux
+build_releases.bat           # On Windows
+
+# Build for all platforms
+./build_all.sh               # On macOS/Linux
+build_all.bat                # On Windows
 ```
 
 Output in `build/bin/`:
-- macOS: `craft-launcher.app`
-- Windows: `craft-launcher.exe`
+- macOS ARM64: `craft-launcher-macos-arm64.app`
+- macOS Intel: `craft-launcher-macos-amd64.app`
+- Windows x64: `craft-launcher-windows-amd64.exe`
+- Windows x86: `craft-launcher-windows-386.exe`
+- Windows ARM: `craft-launcher-windows-arm64.exe`
+- Linux x64: `craft-launcher-linux-amd64` (requires building on Linux)
+- Linux ARM: `craft-launcher-linux-arm64` (requires building on Linux)
+
+**Note**: Linux builds must be compiled on a Linux machine or using Docker with a Linux environment.
 
 ## Key Technical Decisions
 
