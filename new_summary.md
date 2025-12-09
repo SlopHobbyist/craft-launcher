@@ -1,11 +1,5 @@
 # Craft Launcher - Project Summary
 
-> **Note**: This entire project was written by AI (Claude Code: Sonnet 4.5, and Antigravity: Gemini 3 Pro (High)). All code, architecture decisions, and implementation details were generated through AI assistance.
->
-> **Credit**: Parts of this code are based on [java-launcher](https://github.com/SlopHobbyist/java-launcher), which is also completely AI-generated.
->
-> I am a strong advocate for never mixing generated code into real repos.
-> Projects like these should clearly disclose as such.
 ## What It Is
 
 Craft Launcher is a **portable, cross-platform, "one-click" Minecraft launcher** designed to make it incredibly easy for anyone to launch Minecraft 1.8.9 - even complete beginners with zero technical knowledge.
