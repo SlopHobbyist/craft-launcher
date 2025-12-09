@@ -6,6 +6,18 @@ setlocal
 set APP_NAME=craft-launcher
 set BUILD_DIR=build\bin
 
+REM Process icons if source files exist
+if exist "icons\source\launcher-icon.png" (
+    echo ===========================================
+    echo Processing icons...
+    echo ===========================================
+    node icons\process-icons.js
+    if %errorlevel% neq 0 (
+        echo ⚠ Icon processing skipped - continuing build...
+    )
+    echo.
+)
+
 echo ===========================================
 echo Building %APP_NAME% for macOS (ARM64)
 echo ===========================================

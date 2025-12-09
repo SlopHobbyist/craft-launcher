@@ -63,3 +63,10 @@ data/
 versions/
 libraries/
 assets/
+
+# Icon files - only keep source files in icons/source/
+*.png
+*.ico
+*.icns
+!icons/source/launcher-icon.png
+!icons/source/game-icon.png

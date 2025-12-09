@@ -9,6 +9,15 @@ export PATH=$PATH:$HOME/go/bin
 APP_NAME="craft-launcher"
 BUILD_DIR="build/bin"
 
+# Process icons if source files exist
+if [ -f "icons/source/launcher-icon.png" ]; then
+    echo "==========================================="
+    echo "Processing icons..."
+    echo "==========================================="
+    node icons/process-icons.js || echo "⚠ Icon processing skipped - continuing build..."
+    echo ""
+fi
+
 echo "==========================================="
 echo "Building $APP_NAME for macOS (ARM64)"
 echo "==========================================="

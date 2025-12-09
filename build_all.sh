@@ -14,6 +14,15 @@ echo "Building $APP_NAME for all platforms"
 echo "==========================================="
 echo ""
 
+# Process icons if source files exist
+if [ -f "icons/source/launcher-icon.png" ]; then
+    echo "==========================================="
+    echo "Processing icons..."
+    echo "==========================================="
+    node icons/process-icons.js || echo "⚠ Icon processing skipped - continuing build..."
+    echo ""
+fi
+
 # macOS ARM64 (M1/M2/etc)
 echo "==========================================="
 echo "Building for macOS ARM64 (Apple Silicon)"

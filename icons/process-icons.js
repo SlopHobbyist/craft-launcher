@@ -1,0 +1,162 @@
+#!/usr/bin/env node
+
+/**
+ * Icon Processing Script
+ *
+ * This script processes source icon files (2048x2048 PNG) and generates
+ * all required icon formats for the craft-launcher project.
+ *
+ * Source files expected in icons/source/:
+ * - launcher-icon.png (for the launcher application)
+ * - game-icon.png (for the Minecraft game - future use)
+ *
+ * Usage:
+ *   node icons/process-icons.js
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const ROOT_DIR = path.join(__dirname, '..');
+const SOURCE_DIR = path.join(__dirname, 'source');
+const BUILD_DIR = path.join(ROOT_DIR, 'build');
+const WINDOWS_DIR = path.join(BUILD_DIR, 'windows');
+
+// Color codes for console output
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+};
+
+function log(message, color = colors.reset) {
+  console.log(`${color}${message}${colors.reset}`);
+}
+
+function checkDependencies() {
+  log('\n===========================================', colors.cyan);
+  log('Checking dependencies...', colors.cyan);
+  log('===========================================', colors.cyan);
+
+  // Check if ImageMagick is installed
+  try {
+    execSync('convert --version', { stdio: 'ignore' });
+    log('✓ ImageMagick found', colors.green);
+    return true;
+  } catch (e) {
+    log('⚠ ImageMagick not found - skipping icon processing', colors.yellow);
+    log('\nTo enable automatic icon processing, install ImageMagick:', colors.yellow);
+    log('  macOS:   brew install imagemagick', colors.yellow);
+    log('  Windows: choco install imagemagick', colors.yellow);
+    log('  Linux:   sudo apt-get install imagemagick', colors.yellow);
+    log('\nBuild will continue with existing icons...', colors.yellow);
+    return false;
+  }
+}
+
+function ensureDirectories() {
+  log('\n===========================================', colors.cyan);
+  log('Ensuring directories exist...', colors.cyan);
+  log('===========================================', colors.cyan);
+
+  [BUILD_DIR, WINDOWS_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      log(`✓ Created ${dir}`, colors.green);
+    }
+  });
+}
+
+function processLauncherIcon() {
+  const sourcePath = path.join(SOURCE_DIR, 'launcher-icon.png');
+
+  if (!fs.existsSync(sourcePath)) {
+    log(`\n⚠ Warning: ${sourcePath} not found`, colors.yellow);
+    log('  Please add a 2048x2048 PNG file named "launcher-icon.png" to icons/source/', colors.yellow);
+    return false;
+  }
+
+  log('\n===========================================', colors.cyan);
+  log('Processing launcher icon...', colors.cyan);
+  log('===========================================', colors.cyan);
+
+  // Generate appicon.png (512x512) for macOS
+  const appiconPath = path.join(BUILD_DIR, 'appicon.png');
+  try {
+    execSync(`convert "${sourcePath}" -resize 512x512 "${appiconPath}"`, { stdio: 'inherit' });
+    log(`✓ Generated ${appiconPath}`, colors.green);
+  } catch (e) {
+    log(`✗ Failed to generate appicon.png`, colors.red);
+    return false;
+  }
+
+  // Generate icon.ico for Windows (multi-size: 16, 32, 48, 64, 128, 256)
+  const icoPath = path.join(WINDOWS_DIR, 'icon.ico');
+  try {
+    execSync(
+      `convert "${sourcePath}" -resize 256x256 ` +
+      `-define icon:auto-resize=256,128,64,48,32,16 "${icoPath}"`,
+      { stdio: 'inherit' }
+    );
+    log(`✓ Generated ${icoPath}`, colors.green);
+  } catch (e) {
+    log(`✗ Failed to generate icon.ico`, colors.red);
+    return false;
+  }
+
+  return true;
+}
+
+function processGameIcon() {
+  // Game icon processing is disabled - requires a Minecraft mod to work
+  // On macOS: Shows Java mascot (default for .jar files)
+  // On Windows: Shows crafting table (Minecraft default)
+  // Changing these would require modifying the game jar file itself
+  return true;
+}
+
+function main() {
+  log('\n===========================================', colors.cyan);
+  log('Craft Launcher - Icon Processing', colors.cyan);
+  log('===========================================', colors.cyan);
+
+  const hasImageMagick = checkDependencies();
+
+  if (!hasImageMagick) {
+    log('\n===========================================', colors.yellow);
+    log('Skipping icon processing', colors.yellow);
+    log('===========================================', colors.yellow);
+    process.exit(0);
+  }
+
+  ensureDirectories();
+
+  const launcherSuccess = processLauncherIcon();
+  const gameSuccess = processGameIcon();
+
+  log('\n===========================================', colors.cyan);
+  log('Icon Processing Complete!', colors.cyan);
+  log('===========================================', colors.cyan);
+
+  if (launcherSuccess) {
+    log('\nGenerated files:', colors.green);
+    log('  • build/appicon.png (512x512)', colors.reset);
+    log('  • build/windows/icon.ico (multi-size)', colors.reset);
+    log('\nNote: macOS .icns files are generated by Wails during build', colors.yellow);
+  }
+
+  if (!launcherSuccess || !gameSuccess) {
+    log('\n⚠ Some icons failed to process. Check the errors above.', colors.yellow);
+    process.exit(1);
+  }
+}
+
+// Run the script
+if (require.main === module) {
+  main();
+}
+
+module.exports = { processLauncherIcon, processGameIcon };

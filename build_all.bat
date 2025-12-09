@@ -11,6 +11,18 @@ echo Building %APP_NAME% for all platforms
 echo ===========================================
 echo.
 
+REM Process icons if source files exist
+if exist "icons\source\launcher-icon.png" (
+    echo ===========================================
+    echo Processing icons...
+    echo ===========================================
+    node icons\process-icons.js
+    if %errorlevel% neq 0 (
+        echo ⚠ Icon processing skipped - continuing build...
+    )
+    echo.
+)
+
 REM macOS ARM64 (M1/M2/etc)
 echo ===========================================
 echo Building for macOS ARM64 (Apple Silicon)
