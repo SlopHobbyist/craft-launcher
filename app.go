@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -50,16 +51,23 @@ func (a *App) LaunchGame(username string) string {
 		return fmt.Sprintf("Error creating game dir: %v", err)
 	}
 
+	// Determine RAM allocation based on architecture
+	// 32-bit processes can't allocate 2GB heap due to address space limitations
+	ramMB := 2048
+	if runtime.GOARCH == "386" {
+		ramMB = 1024 // 1GB for 32-bit Windows
+	}
+
 	opts := launcher.LaunchOptions{
 		Username:  username,
 		GameDir:   gameDir,
-		RamMB:     2048,
+		RamMB:     ramMB,
 		VersionID: "1.8.9",
 		StatusCallback: func(status string) {
-			runtime.EventsEmit(a.ctx, "update-status", status)
+			wailsruntime.EventsEmit(a.ctx, "update-status", status)
 		},
 		LogCallback: func(data string) {
-			runtime.EventsEmit(a.ctx, "log-data", data)
+			wailsruntime.EventsEmit(a.ctx, "log-data", data)
 		},
 	}
 
@@ -70,21 +78,21 @@ func (a *App) LaunchGame(username string) string {
 		cmd, err := launcher.Launch(opts)
 		if err != nil {
 			fmt.Printf("Error launching: %v\n", err)
-			runtime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Error: %v", err))
+			wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Error: %v", err))
 			return
 		}
 
-		runtime.EventsEmit(a.ctx, "update-status", "Running")
+		wailsruntime.EventsEmit(a.ctx, "update-status", "Running")
 
 		// Wait for game to exit
 		if err := cmd.Wait(); err != nil {
 			fmt.Printf("Game process exited with error: %v\n", err)
 			// Decide if we want to show "Crashed" or just "Ready"
 			// Usually non-zero exit means crash or force quit
-			runtime.EventsEmit(a.ctx, "update-status", "Crashed")
+			wailsruntime.EventsEmit(a.ctx, "update-status", "Crashed")
 		} else {
 			fmt.Printf("Game process exited normally\n")
-			runtime.EventsEmit(a.ctx, "update-status", "Ready to Launch")
+			wailsruntime.EventsEmit(a.ctx, "update-status", "Ready to Launch")
 		}
 	}()
 

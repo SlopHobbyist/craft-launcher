@@ -56,7 +56,7 @@ The launcher handles everything automatically:
 - Sets up offline mode authentication (no Microsoft account needed)
 - Launches Minecraft with default window size (854x480)
 - Captures game logs and displays them in real-time
-- Default RAM allocation: 2048MB
+- RAM allocation: 2048MB (64-bit), 1024MB (32-bit Windows)
 
 **Location**: [launcher/run.go](launcher/run.go)
 
