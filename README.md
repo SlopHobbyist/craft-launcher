@@ -143,6 +143,18 @@ No system-wide installation needed - entire folder can be copied to USB drive.
 - One-click modpack installation for users
 - Update checking for mod changes
 
+## Distribution / Bundling
+
+You can bundle a pre-configured Minecraft setup (mods, options, servers.dat, etc.) with your launcher release.
+
+1.  Create a folder named `bundled` in the project root.
+2.  Place any files you want physically copied to the user's `data` folder inside `bundled`.
+    - Example: `bundled/mods/example-mod.jar`
+    - Example: `bundled/options.txt`
+3.  Run the build script (`./build_releases.sh`).
+
+The build script will automatically copy everything from `bundled/` into the `data/` folder of the built application. Use this to distribute "ready-to-play" modpacks.
+
 #### 3. **Client-Side Anticheat**
 - Robust anticheat system running on client
 - Prevent common hacks/cheats

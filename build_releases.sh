@@ -33,6 +33,29 @@ echo "==========================================="
 wails build -platform windows/amd64
 
 echo ""
+# Handle Bundled Data
+if [ -d "bundled" ]; then
+    echo "==========================================="
+    echo "Bundling pre-configured data..."
+    echo "==========================================="
+    
+    # For macOS: Copy to .app/Contents/MacOS/data
+    MAC_APP="$BUILD_DIR/$APP_NAME.app"
+    if [ -d "$MAC_APP" ]; then
+        echo "Adding to macOS app..."
+        mkdir -p "$MAC_APP/Contents/MacOS/data"
+        cp -r bundled/* "$MAC_APP/Contents/MacOS/data/"
+    fi
+    
+    # For Windows: Copy to data folder next to exe
+    echo "Adding to Windows build..."
+    mkdir -p "$BUILD_DIR/data"
+    cp -r bundled/* "$BUILD_DIR/data/"
+    
+    echo "✓ Bundled data included"
+    echo ""
+fi
+
 echo "==========================================="
 echo "Build Complete!"
 echo "macOS:   $BUILD_DIR/$APP_NAME.app"

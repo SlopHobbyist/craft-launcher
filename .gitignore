@@ -70,3 +70,7 @@ assets/
 *.icns
 !icons/source/launcher-icon.png
 !icons/source/game-icon.png
+
+# Bundled data
+bundled/*
+!bundled/README.txt

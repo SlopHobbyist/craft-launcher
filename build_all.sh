@@ -91,6 +91,40 @@ else
 fi
 echo ""
 
+# Handle Bundled Data
+if [ -d "bundled" ]; then
+    echo "==========================================="
+    echo "Bundling pre-configured data..."
+    echo "==========================================="
+    
+    # Function to copy bundled data to app/exe/binary location
+    bundle_data() {
+        DEST="$1"
+        if [ -d "$DEST" ] || [ -f "$DEST" ]; then
+            # If dest is a file (exe), put data in folder next to it
+            TARGET_DIR=$(dirname "$DEST")/data
+            # If dest is .app, put in Contents/MacOS/data
+            if [[ "$DEST" == *.app ]]; then
+                TARGET_DIR="$DEST/Contents/MacOS/data"
+            fi
+            
+            echo "  -> Copying to $TARGET_DIR"
+            mkdir -p "$TARGET_DIR"
+            cp -r bundled/* "$TARGET_DIR/"
+        fi
+    }
+    
+    # Apply to all built artifacts
+    ls -1 "$BUILD_DIR" | while read -r file; do
+        if [[ "$file" == craft-launcher* || "$file" == *.app ]]; then
+             bundle_data "$BUILD_DIR/$file"
+        fi
+    done
+    
+    echo "✓ Bundled data included"
+    echo ""
+fi
+
 echo "==========================================="
 echo "All builds complete!"
 echo "==========================================="
