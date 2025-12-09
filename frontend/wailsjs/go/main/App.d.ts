@@ -4,4 +4,4 @@ import {main} from '../models';
 
 export function GetSystemInfo():Promise<main.SystemInfo>;
 
-export function LaunchGame(arg1:string,arg2:number):Promise<string>;
+export function LaunchGame(arg1:string,arg2:number,arg3:boolean):Promise<string>;

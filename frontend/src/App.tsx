@@ -12,6 +12,7 @@ function App() {
     const [logs, setLogs] = useState<string[]>([]);
     const [statusHistory, setStatusHistory] = useState<string[]>([]);
     const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+    const [useFabric, setUseFabric] = useState(false);
     const [ramMB, setRamMB] = useState(2048);
     const [systemInfo, setSystemInfo] = useState<main.SystemInfo | null>(null);
 
@@ -50,7 +51,7 @@ function App() {
         if (showLogWhileRunning) {
             setIsConsoleOpen(true);
         }
-        LaunchGame(username, ramMB).then(() => {
+        LaunchGame(username, ramMB, useFabric).then(() => {
             // Status updates will come via events
         });
     };
@@ -110,7 +111,15 @@ function App() {
                                 checked={showLogWhileRunning}
                                 onChange={(e) => setShowLogWhileRunning(e.target.checked)}
                             />
-                            Show Log While Running
+                            Show Log
+                        </label>
+                        <label className="checkbox-label" style={{ marginLeft: '15px' }}>
+                            <input
+                                type="checkbox"
+                                checked={useFabric}
+                                onChange={(e) => setUseFabric(e.target.checked)}
+                            />
+                            Use Fabric
                         </label>
                         {(logs.length > 0 || statusHistory.length > 0) && !isConsoleOpen && (
                             <button

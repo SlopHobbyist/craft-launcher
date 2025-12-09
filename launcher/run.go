@@ -15,6 +15,7 @@ type LaunchOptions struct {
 	VersionID      string
 	StatusCallback func(string)
 	LogCallback    func(string)
+	UseFabric      bool
 }
 
 // writerFunc adapts a function to io.Writer
@@ -99,7 +100,28 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 
 	// Arguments construction
 	// 1.8.9 uses "minecraftArguments" string, newer versions use "arguments" object.
-	// We focus on 1.8.9 here.
+
+	if opts.UseFabric {
+		report("Fetching Fabric Meta...")
+		fabricMeta, err := GetFabricMeta()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get fabric meta: %w", err)
+		}
+
+		report("Downloading Fabric Libs...")
+		fabricCp, err := DownloadFabricLibraries(fabricMeta, opts.GameDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download fabric libs: %w", err)
+		}
+
+		// Combine classpaths: Fabric Libs + Vanilla Libs + Client Jar
+		// Note: Fabric usually wants to be first, or at least before libraries that might conflict.
+		// KnotClient will handle the rest.
+		realCp = strings.Join(fabricCp, string(os.PathListSeparator)) + string(os.PathListSeparator) + realCp
+
+		// Switch Main Class
+		pkg.MainClass = fabricMeta.LaunchMeta.MainClass.Client
+	}
 
 	args := []string{
 		fmt.Sprintf("-Xmx%dM", opts.RamMB),

@@ -24,11 +24,11 @@ func NewApp() *App {
 
 // SystemInfo holds system information for the frontend
 type SystemInfo struct {
-	TotalRAM    uint64 `json:"totalRAM"`    // Total RAM in MiB
-	Is32Bit     bool   `json:"is32Bit"`     // Whether running 32-bit
-	DefaultRAM  int    `json:"defaultRAM"`  // Default RAM allocation in MiB
-	MinRAM      int    `json:"minRAM"`      // Minimum RAM in MiB
-	MaxRAM      int    `json:"maxRAM"`      // Maximum RAM in MiB
+	TotalRAM   uint64 `json:"totalRAM"`   // Total RAM in MiB
+	Is32Bit    bool   `json:"is32Bit"`    // Whether running 32-bit
+	DefaultRAM int    `json:"defaultRAM"` // Default RAM allocation in MiB
+	MinRAM     int    `json:"minRAM"`     // Minimum RAM in MiB
+	MaxRAM     int    `json:"maxRAM"`     // Maximum RAM in MiB
 }
 
 // startup is called when the app starts. The context is saved
@@ -51,9 +51,9 @@ func (a *App) GetSystemInfo() SystemInfo {
 		maxRAM = 1024     // 1 GiB
 	} else {
 		// 64-bit systems
-		defaultRAM = 2048        // 2 GiB
-		minRAM = 2048            // 2 GiB
-		maxRAM = int(totalRAM)   // System max
+		defaultRAM = 2048      // 2 GiB
+		minRAM = 2048          // 2 GiB
+		maxRAM = int(totalRAM) // System max
 	}
 
 	return SystemInfo{
@@ -66,7 +66,7 @@ func (a *App) GetSystemInfo() SystemInfo {
 }
 
 // LaunchGame starts the game
-func (a *App) LaunchGame(username string, ramMB int) string {
+func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 	// Portable: Use the directory of the executable
 	exePath, err := os.Executable()
 	if err != nil {
@@ -103,6 +103,7 @@ func (a *App) LaunchGame(username string, ramMB int) string {
 		GameDir:   gameDir,
 		RamMB:     ramMB,
 		VersionID: "1.8.9",
+		UseFabric: useFabric,
 		StatusCallback: func(status string) {
 			wailsruntime.EventsEmit(a.ctx, "update-status", status)
 		},
