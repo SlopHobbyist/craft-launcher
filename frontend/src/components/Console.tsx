@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ClipboardSetText } from "../../wailsjs/runtime";
 
 interface ConsoleProps {
@@ -9,10 +9,13 @@ interface ConsoleProps {
 
 export function Console({ statusHistory, logs, onClose }: ConsoleProps) {
     const endRef = useRef<HTMLDivElement>(null);
+    const [autoScroll, setAutoScroll] = useState(true);
 
     useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [logs, statusHistory]);
+        if (autoScroll) {
+            endRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [logs, statusHistory, autoScroll]);
 
     const copyToClipboard = () => {
         let allLogs = statusHistory.join("\n");
@@ -29,6 +32,14 @@ export function Console({ statusHistory, logs, onClose }: ConsoleProps) {
                 <div className="console-header">
                     <span>GAME LOGS</span>
                     <div className="console-actions">
+                        <label className="checkbox-label" style={{ marginRight: '15px', color: '#ccc', fontSize: '0.9em' }}>
+                            <input
+                                type="checkbox"
+                                checked={autoScroll}
+                                onChange={(e) => setAutoScroll(e.target.checked)}
+                            />
+                            Autoscroll
+                        </label>
                         <button onClick={copyToClipboard} className="action-btn">COPY</button>
                         <button onClick={onClose} className="close-btn">×</button>
                     </div>
