@@ -110,6 +110,12 @@ if [ -f "install_linux.sh" ]; then
     echo "✓ install_linux.sh copied to build directory"
 fi
 
+# Copy launcher icon for Linux
+if [ -f "icons/source/launcher-icon.png" ]; then
+    cp icons/source/launcher-icon.png "$BUILD_DIR/"
+    echo "✓ launcher-icon.png copied to build directory"
+fi
+
 echo "==========================================="
 echo "All builds complete!"
 echo "==========================================="
