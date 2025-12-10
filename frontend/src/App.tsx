@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { LaunchGame, GetSystemInfo } from "../wailsjs/go/main/App";
+import { LaunchGame, GetSystemInfo, ForceStopGame } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 import { Console } from "./components/Console";
 import { main } from "../wailsjs/go/models";
@@ -15,6 +15,10 @@ function App() {
     const [useFabric, setUseFabric] = useState(false);
     const [ramMB, setRamMB] = useState(2048);
     const [systemInfo, setSystemInfo] = useState<main.SystemInfo | null>(null);
+
+    // Derived state
+    const isRunning = status === "Running";
+    const isLaunching = status === "Launching..." || status.startsWith("Downloading") || status.startsWith("Checking");
 
     useEffect(() => {
         // Fetch system info on startup
@@ -45,14 +49,24 @@ function App() {
     }, []);
 
     const launch = () => {
+        if (isRunning) {
+            ForceStopGame().then((res: string) => {
+                setStatusHistory(prev => [...prev, `[LAUNCHER] ${res}`]);
+            });
+            return;
+        }
+
         setStatus("Launching...");
         setLogs([]); // Clear logs on new launch
         setStatusHistory([]); // Clear status history on new launch
         if (showLogWhileRunning) {
             setIsConsoleOpen(true);
         }
-        LaunchGame(username, ramMB, useFabric).then(() => {
-            // Status updates will come via events
+        LaunchGame(username, ramMB, useFabric).then((res: string) => {
+            if (res === "Game is already running!") {
+                // Revert status if we failed to launch
+                setStatus("Running");
+            }
         });
     };
 
@@ -69,6 +83,7 @@ function App() {
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="Offline Username"
                         className="username-input"
+                        disabled={isRunning || isLaunching}
                     />
                 </div>
 
@@ -97,7 +112,7 @@ function App() {
                         }}
                         min={systemInfo ? Math.ceil(systemInfo.minRAM / 1024) : 1}
                         max={systemInfo ? Math.floor(systemInfo.maxRAM / 1024) : 32}
-                        disabled={systemInfo?.is32Bit}
+                        disabled={systemInfo?.is32Bit || isRunning || isLaunching}
                         className="ram-input"
                         placeholder="2"
                     />
@@ -118,6 +133,7 @@ function App() {
                                 type="checkbox"
                                 checked={useFabric}
                                 onChange={(e) => setUseFabric(e.target.checked)}
+                                disabled={isRunning || isLaunching}
                             />
                             Use Fabric
                         </label>
@@ -134,8 +150,13 @@ function App() {
                     <button className="btn secondary" disabled>
                         CHECK FOR UPDATES
                     </button>
-                    <button className="btn primary" onClick={launch}>
-                        PLAY ({username})
+                    <button
+                        className={`btn ${isRunning ? 'danger' : 'primary'}`}
+                        onClick={launch}
+                        disabled={isLaunching && !isRunning}
+                        style={isRunning ? { backgroundColor: '#e74c3c' } : {}}
+                    >
+                        {isRunning ? "FORCE STOP" : (isLaunching ? "LAUNCHING..." : `PLAY (${username})`)}
                     </button>
                 </div>
 

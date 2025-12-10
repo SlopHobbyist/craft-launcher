@@ -28,11 +28,9 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 	statusCallback("Checking for updates...")
 	serverManifest, err := fetchManifest()
 	if err != nil {
-		// If server is down, we might want to allow launch if we have a local version?
-		// User requirement "I want exactly my modpack", implies strictness.
-		// But if internet is down, maybe warn?
-		// For now, return error as it's safer for anti-tamper.
-		return fmt.Errorf("failed to fetch update manifest: %w", err)
+		// STRICT REQUIREMENT: Refuse to start if unable to connect to server.
+		// OBFUSCATION: Do not show IP or detailed error.
+		return fmt.Errorf("Can't connect to server. You either need to:\n1. Connect to the internet\n2. Wait 30 seconds and try again.")
 	}
 
 	// 2. Read Local Manifest
@@ -124,6 +122,16 @@ func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
 			if _, err := os.Stat(localPath); err == nil {
 				// File exists, skipping
 				// cb(fmt.Sprintf("Skipping user file: %s", file.Path))
+				continue
+			}
+		}
+
+		// Check if file exists and matches checksum to avoid unnecessary re-download
+		if _, err := os.Stat(localPath); err == nil {
+			valid, err := verifyFileChecksum(gameDir, file)
+			if err == nil && valid {
+				// File exists and is valid, skip download
+				// cb(fmt.Sprintf("Skipping unchanged file: %s", file.Path))
 				continue
 			}
 		}

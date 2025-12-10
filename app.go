@@ -6,8 +6,10 @@ import (
 	"craft-launcher/launcher/integrity"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/pbnjay/memory"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -15,7 +17,9 @@ import (
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx     context.Context
+	cmd     *exec.Cmd
+	cmdLock sync.Mutex
 }
 
 // NewApp creates a new App application struct
@@ -68,6 +72,13 @@ func (a *App) GetSystemInfo() SystemInfo {
 
 // LaunchGame starts the game
 func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
+	a.cmdLock.Lock()
+	if a.cmd != nil {
+		a.cmdLock.Unlock()
+		return "Game is already running!"
+	}
+	a.cmdLock.Unlock()
+
 	// Portable: Use the directory of the executable
 	exePath, err := os.Executable()
 	if err != nil {
@@ -75,17 +86,7 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 	}
 	exeDir := filepath.Dir(exePath)
 
-	// If on macOS inside .app bundle, verify we are not writing inside the bundle if signed?
-	// For "portable" request, usually means "alongside the launcher".
-	// In macOS .app, the exe is in Contents/MacOS. We probably want to go up to the .app level or just use a folder next to it.
-	// But commonly "portable" means "data folder next to binary".
-
 	gameDir := filepath.Join(exeDir, "data")
-
-	// Fix for macOS specific "translocation" or read-only bundle issues?
-	// If user runs directly `build/bin/craft-launcher.app/Contents/MacOS/craft-launcher`, exeDir is .../MacOS.
-	// We'll put data in .../MacOS/data for now to be strictly portable relative to binary.
-
 	if err := os.MkdirAll(gameDir, 0755); err != nil {
 		return fmt.Sprintf("Error creating game dir: %v", err)
 	}
@@ -106,7 +107,6 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 
 	if err := integrity.CheckAndUpdate(gameDir, statusCallback); err != nil {
 		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Update Error: %v", err))
-		// We can return the error if we want to block launch on update failure
 		return fmt.Sprintf("Update Error: %v", err)
 	}
 
@@ -125,10 +125,7 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 	}
 
 	go func() {
-		// Launch is blocking in terms of download, but run.go's Run() starts command non-blocking.
-		// However, we want to run the whole logic in background so GUI doesn't freeze during download.
-
-		// Log platform information for debugging as status messages
+		// Log platform information
 		wailsruntime.EventsEmit(a.ctx, "update-status", "=== PLATFORM INFO ===")
 		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("OS: %s", runtime.GOOS))
 		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Architecture: %s", runtime.GOARCH))
@@ -139,6 +136,8 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 		wailsruntime.EventsEmit(a.ctx, "update-status", "=====================")
 
 		fmt.Printf("Starting launch for %s...\n", username)
+
+		// Launch and store command
 		cmd, err := launcher.Launch(opts)
 		if err != nil {
 			fmt.Printf("Error launching: %v\n", err)
@@ -146,19 +145,40 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 			return
 		}
 
+		a.cmdLock.Lock()
+		a.cmd = cmd
+		a.cmdLock.Unlock()
+
 		wailsruntime.EventsEmit(a.ctx, "update-status", "Running")
 
 		// Wait for game to exit
 		if err := cmd.Wait(); err != nil {
 			fmt.Printf("Game process exited with error: %v\n", err)
-			// Decide if we want to show "Crashed" or just "Ready"
-			// Usually non-zero exit means crash or force quit
 			wailsruntime.EventsEmit(a.ctx, "update-status", "Crashed")
 		} else {
 			fmt.Printf("Game process exited normally\n")
 			wailsruntime.EventsEmit(a.ctx, "update-status", "Ready to Launch")
 		}
+
+		// Cleanup
+		a.cmdLock.Lock()
+		a.cmd = nil
+		a.cmdLock.Unlock()
 	}()
 
 	return "Launching..."
+}
+
+// ForceStopGame kills the running game process
+func (a *App) ForceStopGame() string {
+	a.cmdLock.Lock()
+	defer a.cmdLock.Unlock()
+
+	if a.cmd != nil && a.cmd.Process != nil {
+		if err := a.cmd.Process.Kill(); err != nil {
+			return fmt.Sprintf("Error killing process: %v", err)
+		}
+		return "Force stopped."
+	}
+	return "No game running."
 }
