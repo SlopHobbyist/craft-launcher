@@ -18,7 +18,7 @@ const (
 )
 
 // CheckAndUpdate handles the entire update flow
-func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
+func CheckAndUpdate(gameDir string, serverURL string, statusCallback func(string)) error {
 	// Ensure game dir exists
 	if err := os.MkdirAll(gameDir, 0755); err != nil {
 		return err
@@ -26,7 +26,7 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 
 	// 1. Fetch Server Manifest
 	statusCallback("Checking for updates...")
-	serverManifest, err := fetchManifest()
+	serverManifest, err := fetchManifest(serverURL)
 	if err != nil {
 		// STRICT REQUIREMENT: Refuse to start if unable to connect to server.
 		// OBFUSCATION: Do not show IP or detailed error.
@@ -53,7 +53,7 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 			cleanupOldFiles(gameDir, localManifest, serverManifest, statusCallback)
 		}
 
-		if err := syncingUpdate(gameDir, serverManifest, statusCallback); err != nil {
+		if err := syncingUpdate(gameDir, serverURL, serverManifest, statusCallback); err != nil {
 			return err
 		}
 		// Save new manifest as local state
@@ -64,7 +64,7 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 	} else {
 		statusCallback("Verifying integrity...")
 		// Even if versions match, verify hashes of managed files
-		if err := verifyAndRepair(gameDir, serverManifest, statusCallback); err != nil {
+		if err := verifyAndRepair(gameDir, serverURL, serverManifest, statusCallback); err != nil {
 			return err
 		}
 		statusCallback("Integrity verified.")
@@ -79,13 +79,13 @@ func CheckAndUpdate(gameDir string, statusCallback func(string)) error {
 	return nil
 }
 
-func fetchManifest() (*Manifest, error) {
+func fetchManifest(serverURL string) (*Manifest, error) {
 	var resp *http.Response
 	var err error
 	maxRetries := 5
 
 	for i := 0; i < maxRetries; i++ {
-		resp, err = http.Get(ServerURL + "/manifest.json")
+		resp, err = http.Get(serverURL + "/manifest.json")
 		if err == nil {
 			break
 		}
@@ -113,7 +113,7 @@ func fetchManifest() (*Manifest, error) {
 	return &manifest, nil
 }
 
-func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
+func syncingUpdate(gameDir string, serverURL string, manifest *Manifest, cb func(string)) error {
 	for i, file := range manifest.Files {
 		// If file exists and override is false, skip it (preserve user data)
 		// We only download if it's missing entirely
@@ -138,7 +138,7 @@ func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
 
 		cb(fmt.Sprintf("Downloading [%d/%d]: %s", i+1, len(manifest.Files), file.Path))
 
-		if err := downloadFile(gameDir, file); err != nil {
+		if err := downloadFile(gameDir, serverURL, file); err != nil {
 			return fmt.Errorf("failed to download %s: %w", file.Path, err)
 		}
 
@@ -154,7 +154,7 @@ func syncingUpdate(gameDir string, manifest *Manifest, cb func(string)) error {
 	return nil
 }
 
-func verifyAndRepair(gameDir string, manifest *Manifest, cb func(string)) error {
+func verifyAndRepair(gameDir string, serverURL string, manifest *Manifest, cb func(string)) error {
 	for _, file := range manifest.Files {
 		// If override is false, we don't enforce integrity on existing files
 		// This protects user options from being reset
@@ -170,7 +170,7 @@ func verifyAndRepair(gameDir string, manifest *Manifest, cb func(string)) error 
 
 		if !valid {
 			cb(fmt.Sprintf("Repairing tampered file: %s", file.Path))
-			if err := downloadFile(gameDir, file); err != nil {
+			if err := downloadFile(gameDir, serverURL, file); err != nil {
 				return fmt.Errorf("failed to repair %s: %w", file.Path, err)
 			}
 		}
@@ -198,7 +198,7 @@ func cleanupOldFiles(gameDir string, oldManifest *Manifest, newManifest *Manifes
 	}
 }
 
-func downloadFile(gameDir string, file FileInfo) error {
+func downloadFile(gameDir string, serverURL string, file FileInfo) error {
 	localPath := filepath.Join(gameDir, file.Path)
 
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
@@ -207,7 +207,7 @@ func downloadFile(gameDir string, file FileInfo) error {
 
 	// Use /files/ prefix as per user example logic (implied or standard)
 	// User code: url := fmt.Sprintf("%s/files/%s", ServerURL, file.Path)
-	url := fmt.Sprintf("%s/files/%s", ServerURL, file.Path)
+	url := fmt.Sprintf("%s/files/%s", serverURL, file.Path)
 
 	resp, err := http.Get(url)
 	if err != nil {

@@ -71,7 +71,7 @@ func (a *App) GetSystemInfo() SystemInfo {
 }
 
 // LaunchGame starts the game
-func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
+func (a *App) LaunchGame(username string, ramMB int, useFabric bool, serverURL string) string {
 	a.cmdLock.Lock()
 	if a.cmd != nil {
 		a.cmdLock.Unlock()
@@ -105,7 +105,7 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 		wailsruntime.EventsEmit(a.ctx, "update-status", msg)
 	}
 
-	if err := integrity.CheckAndUpdate(gameDir, statusCallback); err != nil {
+	if err := integrity.CheckAndUpdate(gameDir, serverURL, statusCallback); err != nil {
 		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Update Error: %v", err))
 		return fmt.Sprintf("Update Error: %v", err)
 	}

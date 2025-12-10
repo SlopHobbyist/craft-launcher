@@ -6,4 +6,4 @@ export function ForceStopGame():Promise<string>;
 
 export function GetSystemInfo():Promise<main.SystemInfo>;
 
-export function LaunchGame(arg1:string,arg2:number,arg3:boolean):Promise<string>;
+export function LaunchGame(arg1:string,arg2:number,arg3:boolean,arg4:string):Promise<string>;

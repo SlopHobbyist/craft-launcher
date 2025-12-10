@@ -10,6 +10,6 @@ export function GetSystemInfo() {
   return window['go']['main']['App']['GetSystemInfo']();
 }
 
-export function LaunchGame(arg1, arg2, arg3) {
-  return window['go']['main']['App']['LaunchGame'](arg1, arg2, arg3);
+export function LaunchGame(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['LaunchGame'](arg1, arg2, arg3, arg4);
 }
