@@ -19,6 +19,12 @@ func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 
+	// Setup Linux desktop file for proper taskbar icon
+	if err := setupLinuxDesktopFile(); err != nil {
+		println("Warning: Failed to setup Linux desktop file:", err.Error())
+	}
+	defer cleanupLinuxDesktopFile()
+
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "craft-launcher",
