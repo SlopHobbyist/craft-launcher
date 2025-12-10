@@ -27,7 +27,7 @@ REM macOS ARM64 (M1/M2/etc)
 echo ===========================================
 echo Building for macOS ARM64 (Apple Silicon)
 echo ===========================================
-wails build -platform darwin/arm64
+wails build -platform darwin/arm64 %LDFLAGS%
 if exist "%BUILD_DIR%\%APP_NAME%.app" (
     move /Y "%BUILD_DIR%\%APP_NAME%.app" "%BUILD_DIR%\%APP_NAME%-macos-arm64.app" >nul
 )
@@ -38,7 +38,7 @@ REM macOS x86-64 (Intel)
 echo ===========================================
 echo Building for macOS x86-64 (Intel)
 echo ===========================================
-wails build -platform darwin/amd64
+wails build -platform darwin/amd64 %LDFLAGS%
 if exist "%BUILD_DIR%\%APP_NAME%.app" (
     move /Y "%BUILD_DIR%\%APP_NAME%.app" "%BUILD_DIR%\%APP_NAME%-macos-amd64.app" >nul
 )
@@ -49,7 +49,7 @@ REM Windows x86-64
 echo ===========================================
 echo Building for Windows x86-64
 echo ===========================================
-wails build -platform windows/amd64 -o craft-launcher-windows-amd64.exe
+wails build -platform windows/amd64 %LDFLAGS% -o craft-launcher-windows-amd64.exe
 if %errorlevel% equ 0 (
     echo √ Windows x86-64 build complete
 ) else (
@@ -61,7 +61,7 @@ REM Windows x86 (32-bit)
 echo ===========================================
 echo Building for Windows x86 (32-bit)
 echo ===========================================
-wails build -platform windows/386 -o craft-launcher-windows-386.exe
+wails build -platform windows/386 %LDFLAGS% -o craft-launcher-windows-386.exe
 if %errorlevel% equ 0 (
     echo √ Windows x86 32-bit build complete
 ) else (
@@ -73,7 +73,7 @@ REM Windows ARM
 echo ===========================================
 echo Building for Windows ARM
 echo ===========================================
-wails build -platform windows/arm64 -o craft-launcher-windows-arm64.exe
+wails build -platform windows/arm64 %LDFLAGS% -o craft-launcher-windows-arm64.exe
 if %errorlevel% equ 0 (
     echo √ Windows ARM build complete
 ) else (
@@ -85,7 +85,7 @@ REM Linux x86-64
 echo ===========================================
 echo Building for Linux x86-64
 echo ===========================================
-wails build -platform linux/amd64 -o craft-launcher-linux-amd64 >nul 2>&1
+wails build -platform linux/amd64 %LDFLAGS% -o craft-launcher-linux-amd64 >nul 2>&1
 if %errorlevel% equ 0 (
     echo √ Linux x86-64 build complete
 ) else (
@@ -97,7 +97,7 @@ REM Linux ARM
 echo ===========================================
 echo Building for Linux ARM
 echo ===========================================
-wails build -platform linux/arm64 -o craft-launcher-linux-arm64 >nul 2>&1
+wails build -platform linux/arm64 %LDFLAGS% -o craft-launcher-linux-arm64 >nul 2>&1
 if %errorlevel% equ 0 (
     echo √ Linux ARM build complete
 ) else (
