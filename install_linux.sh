@@ -35,32 +35,6 @@ else
 fi
 
 
-echo "Setting up desktop shortcut..."
-# Get absolute path to current directory
-INSTALL_DIR=$(pwd)
-ICON_PATH="$INSTALL_DIR/launcher-icon.png"
 
-# Setup desktop entry
-mkdir -p $HOME/.local/share/applications/
-cat <<EOF > $HOME/.local/share/applications/craft-launcher.desktop
-[Desktop Entry]
-Type=Application
-Name=Craft Launcher
-Comment=Minecraft 1.8.9 Launcher
-Exec=$INSTALL_DIR/craft-launcher-linux-amd64
-Icon=$ICON_PATH
-Terminal=false
-Categories=Game;
-Keywords=minecraft;launcher;
-EOF
-
-echo "Desktop entry created at $HOME/.local/share/applications/craft-launcher.desktop"
-
-# If icon doesn't exist, warn user
-if [ ! -f "$ICON_PATH" ]; then
-    echo "Warning: launcher-icon.png not found in $INSTALL_DIR"
-    echo "The desktop shortcut may show a missing icon."
-fi
-
-echo "Done! You can find 'Craft Launcher' in your applications menu."
+echo "Done!"
 
