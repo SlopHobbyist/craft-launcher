@@ -104,6 +104,12 @@ fi
 echo ""
 
 
+# Copy Linux install script
+if [ -f "install_linux.sh" ]; then
+    cp install_linux.sh "$BUILD_DIR/"
+    echo "✓ install_linux.sh copied to build directory"
+fi
+
 echo "==========================================="
 echo "All builds complete!"
 echo "==========================================="

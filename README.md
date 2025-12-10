@@ -208,7 +208,30 @@ Craft Launcher supports the following platforms:
 
 - **Linux**
   - Linux (x86-64) - Debian, Arch, and popular forks
-  - Linux (ARM64) - Raspberry Pi and other ARM devices
+- Linux (ARM64) - Raspberry Pi and other ARM devices
+
+### Linux Prerequisites
+
+On Linux, you may need to install `libwebkit2gtk-4.0-dev` for the launcher to work correctly.
+
+**Automatic Setup (Recommended):**
+We provide a setup script that handles dependencies and permissions for you.
+```bash
+# Download the script (or find it in the release folder)
+./install_linux.sh
+```
+
+**Manual Setup (Ubuntu/Debian):**
+```bash
+sudo nano /etc/apt/sources.list
+# Add this line if missing: deb http://gb.archive.ubuntu.com/ubuntu jammy main
+sudo apt update
+sudo apt install libwebkit2gtk-4.0-dev
+
+# Then make the launcher executable:
+chmod +x craft-launcher-linux-amd64
+./craft-launcher-linux-amd64
+```
 
 ## Building the Launcher
 
