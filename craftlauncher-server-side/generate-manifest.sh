@@ -6,6 +6,25 @@
 MODPACK_DIR="/usr/share/nginx/html/files"
 MANIFEST_FILE="/usr/share/nginx/html/manifest.json"
 VERSION_FILE="/usr/share/nginx/html/files/.version"
+OVERRIDES_FILE="/usr/share/nginx/html/files/.manifest_overrides"
+
+# Create default overrides file if it doesn't exist
+if [ ! -f "$OVERRIDES_FILE" ] && [ -d "$MODPACK_DIR" ]; then
+    echo "Creating default .manifest_overrides..."
+    cat > "$OVERRIDES_FILE" <<EOF
+# Manifest Overrides Configuration
+# Format: <glob_pattern> <override_boolean>
+# Patterns are matched against the file path relative to the files directory.
+# Rules are processed in order, last match wins.
+
+# Default non-overridden user configuration files
+options.txt false
+optionsof.txt false
+optionsshaders.txt false
+servers.dat false
+usercache.json false
+EOF
+fi
 
 # Clean up temp and system files
 echo "Cleaning up temp and system files..."
@@ -43,8 +62,8 @@ find "$MODPACK_DIR" -type f ! -name ".version" | sort | while read -r file; do
     # Get relative path
     REL_PATH=$(echo "$file" | sed "s|$MODPACK_DIR/||")
     
-    # Skip if it's the version file
-    if [ "$REL_PATH" = ".version" ]; then
+    # Skip if it's the version file or overrides file
+    if [ "$REL_PATH" = ".version" ] || [ "$REL_PATH" = ".manifest_overrides" ]; then
         continue
     fi
     
@@ -56,14 +75,38 @@ find "$MODPACK_DIR" -type f ! -name ".version" | sort | while read -r file; do
     
     # Determine override status (default true)
     OVERRIDE="true"
-    FILENAME=$(basename "$file")
     
-    # Files that should NOT be overridden if they exist (user configs)
-    case "$FILENAME" in
-        options.txt|optionsof.txt|optionsshaders.txt|servers.dat|usercache.json)
-            OVERRIDE="false"
-            ;;
-    esac
+    # Check overrides file if it exists
+    if [ -f "$OVERRIDES_FILE" ]; then
+        # Read file line by line
+        # We use a file descriptor other than 0 (stdin) to avoid conflict with the outer loop
+        while IFS=' ' read -r pattern value <&3; do
+            # Skip comments and empty lines
+            case "$pattern" in 
+                \#*|"") continue ;; 
+            esac
+            
+            # Check if file matches pattern
+            # We match against the relative path
+            case "$REL_PATH" in
+                $pattern) 
+                    # Normalize boolean value
+                    case "$value" in
+                        [Tt][Rr][Uu][Ee]) OVERRIDE="true" ;;
+                        [Ff][Aa][Ll][Ss][Ee]) OVERRIDE="false" ;;
+                    esac
+                    ;;
+            esac
+        done 3< "$OVERRIDES_FILE"
+    else
+        # Fallback to legacy hardcoded defaults for backward compatibility if file is missing (though we create it above)
+        FILENAME=$(basename "$file")
+        case "$FILENAME" in
+            options.txt|optionsof.txt|optionsshaders.txt|servers.dat|usercache.json)
+                OVERRIDE="false"
+                ;;
+        esac
+    fi
     
     # Add comma before each entry except the first
     if [ "$FIRST" = true ]; then
