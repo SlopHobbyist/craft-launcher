@@ -6,24 +6,14 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed launcher-icon.png
-var icon []byte
-
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-
-	// Setup Linux desktop file for proper taskbar icon
-	if err := setupLinuxDesktopFile(); err != nil {
-		println("Warning: Failed to setup Linux desktop file:", err.Error())
-	}
-	defer cleanupLinuxDesktopFile()
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -37,9 +27,6 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
-		},
-		Linux: &linux.Options{
-			Icon: icon,
 		},
 	})
 
