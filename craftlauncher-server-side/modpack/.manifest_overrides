@@ -1,0 +1,11 @@
+# Manifest Overrides Configuration
+# Format: <glob_pattern> <override_boolean>
+# Patterns are matched against the file path relative to the files directory.
+# Rules are processed in order, last match wins.
+
+# Default non-overridden user configuration files
+options.txt true
+optionsof.txt true
+optionsshaders.txt true
+servers.dat true
+usercache.json false

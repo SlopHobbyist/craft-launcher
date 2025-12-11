@@ -3,7 +3,7 @@ services:
     image: nginx:alpine
     container_name: modpack-server
     ports:
-      - "127.0.0.1:8090:80"
+      - "8090:80"
     volumes:
       - ./modpack:/usr/share/nginx/html/files
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

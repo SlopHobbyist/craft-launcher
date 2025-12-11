@@ -1,0 +1,16 @@
+filename = 'phosphor-legacy-0.1.5+1.8.9.jar'
+name = 'Phosphor-Legacy'
+side = 'both'
+x-prismlauncher-loaders = [ 'fabric' ]
+x-prismlauncher-mc-versions = [ '1.8.9' ]
+x-prismlauncher-release-type = 'beta'
+
+[download]
+hash = '545053cac160326707f9acf27599b16a1adea16817ac6c52cd25cd8af7755b9e34765182fe9c61b58238239799451b13db9ddd6286784710d672f470f9428a67'
+hash-format = 'sha512'
+mode = 'url'
+url = 'https://cdn.modrinth.com/data/fLCmgUPa/versions/UdBfSdpd/phosphor-legacy-0.1.5%2B1.8.9.jar'
+
+[update.modrinth]
+mod-id = 'fLCmgUPa'
+version = 'UdBfSdpd'

@@ -1,0 +1,13 @@
+{
+    "betterCrashes": true,
+    "catchInitCrashes": true,
+    "fasterDimensionChange": true,
+    "allowGUIsInNetherPortals": true,
+    "disableInitialChunkLoad": false,
+    "F5Fix": true,
+    "F11Fix": true,
+    "enableSkinSemiTransparency": true,
+    "handBugFix": true,
+    "skyDarknessFix": true,
+    "cullParticles": true
+}

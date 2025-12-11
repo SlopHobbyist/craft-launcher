@@ -1,0 +1,32 @@
+filename = 'languagefix-1.0.0+1.8.9_to_1.12.2.jar'
+name = 'Mipmaplevel and Language Fix'
+side = 'client'
+x-prismlauncher-loaders = [ 'fabric' ]
+x-prismlauncher-mc-versions = [
+    '1.10',
+    '1.10.1',
+    '1.10.2',
+    '1.11',
+    '1.11.1',
+    '1.11.2',
+    '1.12',
+    '1.12.1',
+    '1.12.2',
+    '1.8.9',
+    '1.9',
+    '1.9.1',
+    '1.9.2',
+    '1.9.3',
+    '1.9.4'
+]
+x-prismlauncher-release-type = 'release'
+
+[download]
+hash = '67264974132c663fa529e996a4b39cbc3ed8045ac3a9c3c9f04276e0145f86bc686e7fb3eed2902f7d865643440c1cf4747aecceb90bf26abdc3382189ee536e'
+hash-format = 'sha512'
+mode = 'url'
+url = 'https://cdn.modrinth.com/data/nyobcYVj/versions/1.0.0%2B1.8.9_to_1.12.2/languagefix-1.0.0%2B1.8.9_to_1.12.2.jar'
+
+[update.modrinth]
+mod-id = 'nyobcYVj'
+version = 'aWmzozf8'
