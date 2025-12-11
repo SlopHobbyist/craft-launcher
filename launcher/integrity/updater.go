@@ -30,7 +30,7 @@ func CheckAndUpdate(gameDir string, serverURL string, statusCallback func(string
 	if err != nil {
 		// STRICT REQUIREMENT: Refuse to start if unable to connect to server.
 		// OBFUSCATION: Do not show IP or detailed error.
-		return fmt.Errorf("Can't connect to server. You either need to:\n1. Connect to the internet\n2. Wait 30 seconds and try again.")
+		return fmt.Errorf("can't connect to server. You either need to:\n1. Connect to the internet\n2. Wait 30 seconds and try again")
 	}
 
 	// 2. Read Local Manifest
@@ -45,36 +45,23 @@ func CheckAndUpdate(gameDir string, serverURL string, statusCallback func(string
 	statusCallback(fmt.Sprintf("Local Version: %d, Server Version: %d", currentVersion, serverManifest.Version))
 
 	// 3. Update or Verify
-	if serverManifest.Version > currentVersion {
-		statusCallback(fmt.Sprintf("New update found (v%d). Downloading...", serverManifest.Version))
+	// We now ALWAYS sync to ensure that even if the version number is the same,
+	// any file changes (added/removed/modified) are reflected.
+	statusCallback(fmt.Sprintf("Checking for updates (v%d)...", serverManifest.Version))
 
-		// Clean up old files that are not in the new manifest
-		if localManifest != nil {
-			cleanupOldFiles(gameDir, localManifest, serverManifest, statusCallback)
-		}
-
-		if err := syncingUpdate(gameDir, serverURL, serverManifest, statusCallback); err != nil {
-			return err
-		}
-		// Save new manifest as local state
-		if err := saveLocalManifest(localManifestPath, serverManifest); err != nil {
-			return fmt.Errorf("failed to save local manifest: %w", err)
-		}
-		statusCallback("Update complete!")
-	} else {
-		statusCallback("Verifying integrity...")
-		// Even if versions match, verify hashes of managed files
-		if err := verifyAndRepair(gameDir, serverURL, serverManifest, statusCallback); err != nil {
-			return err
-		}
-		statusCallback("Integrity verified.")
+	// Clean up old files that are not in the new manifest
+	if localManifest != nil {
+		cleanupOldFiles(gameDir, localManifest, serverManifest, statusCallback)
 	}
 
-	// Clean up unmanaged files?
-	// The user example had 'cleanModpackDir' which deleted EVERYTHING not in manifest.
-	// This is destructive to user content (screenshots, saves).
-	// We should probably only clean managed directories like 'mods/'.
-	// For now, stick to verification/repair of defined files to be safe.
+	if err := syncingUpdate(gameDir, serverURL, serverManifest, statusCallback); err != nil {
+		return err
+	}
+	// Save new manifest as local state
+	if err := saveLocalManifest(localManifestPath, serverManifest); err != nil {
+		return fmt.Errorf("failed to save local manifest: %w", err)
+	}
+	statusCallback("Integrity verified & up to date.")
 
 	return nil
 }
@@ -149,30 +136,6 @@ func syncingUpdate(gameDir string, serverURL string, manifest *Manifest, cb func
 		}
 		if !valid {
 			return fmt.Errorf("checksum mismatch after download for %s", file.Path)
-		}
-	}
-	return nil
-}
-
-func verifyAndRepair(gameDir string, serverURL string, manifest *Manifest, cb func(string)) error {
-	for _, file := range manifest.Files {
-		// If override is false, we don't enforce integrity on existing files
-		// This protects user options from being reset
-		if !file.Override {
-			continue
-		}
-
-		valid, err := verifyFileChecksum(gameDir, file)
-		if err != nil {
-			// Might be missing
-			valid = false
-		}
-
-		if !valid {
-			cb(fmt.Sprintf("Repairing tampered file: %s", file.Path))
-			if err := downloadFile(gameDir, serverURL, file); err != nil {
-				return fmt.Errorf("failed to repair %s: %w", file.Path, err)
-			}
 		}
 	}
 	return nil
