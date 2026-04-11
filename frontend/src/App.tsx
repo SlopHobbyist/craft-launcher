@@ -14,7 +14,6 @@ function App() {
     const [isConsoleOpen, setIsConsoleOpen] = useState(false);
     const [useFabric, setUseFabric] = useState(false);
     const [ramMB, setRamMB] = useState(2048);
-    const [serverURL, setServerURL] = useState("http://127.0.0.1:8090");
     const [systemInfo, setSystemInfo] = useState<main.SystemInfo | null>(null);
 
     // Derived state
@@ -63,7 +62,7 @@ function App() {
         if (showLogWhileRunning) {
             setIsConsoleOpen(true);
         }
-        LaunchGame(username, ramMB, useFabric, serverURL).then((res: string) => {
+        LaunchGame(username, ramMB, useFabric).then((res: string) => {
             if (res === "Game is already running!") {
                 // Revert status if we failed to launch
                 setStatus("Running");
@@ -116,18 +115,6 @@ function App() {
                         disabled={systemInfo?.is32Bit || isRunning || isLaunching}
                         className="ram-input"
                         placeholder="2"
-                    />
-                </div>
-
-                <div className="input-group">
-                    <label>SERVER URL</label>
-                    <input
-                        type="text"
-                        value={serverURL}
-                        onChange={(e) => setServerURL(e.target.value)}
-                        placeholder="http://127.0.0.1:8090"
-                        className="username-input" // Reusing username-input style for consistency
-                        disabled={isRunning || isLaunching}
                     />
                 </div>
 

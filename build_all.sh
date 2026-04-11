@@ -9,16 +9,7 @@ export PATH=$PATH:$HOME/go/bin
 APP_NAME="craft-launcher"
 BUILD_DIR="build/bin"
 
-# Read Server URL
-SERVER_URL=""
-if [ -f ".server_url" ]; then
-    SERVER_URL=$(cat .server_url | tr -d '\n\r')
-    echo "Using Server URL: $SERVER_URL"
-else
-    echo "Warning: .server_url not found. Using default."
-fi
-
-LDFLAGS="-X 'craft-launcher/launcher/integrity.ServerURL=$SERVER_URL'"
+LDFLAGS=""
 
 echo "==========================================="
 echo "Building $APP_NAME for all platforms"
@@ -39,8 +30,7 @@ fi
 echo "==========================================="
 echo "Building for macOS ARM64 (Apple Silicon)"
 echo "==========================================="
-wails build -platform darwin/arm64 -ldflags "$LDFLAGS"
-if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
+wails build -platform darwin/arm64if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-arm64.app"
 fi
 echo "✓ macOS ARM64 build complete"
@@ -50,8 +40,7 @@ echo ""
 echo "==========================================="
 echo "Building for macOS x86-64 (Intel)"
 echo "==========================================="
-wails build -platform darwin/amd64 -ldflags "$LDFLAGS"
-if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
+wails build -platform darwin/amd64if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-amd64.app"
 fi
 echo "✓ macOS x86-64 build complete"

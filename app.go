@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"craft-launcher/launcher"
-	"craft-launcher/launcher/integrity"
 	"fmt"
 	"os"
 	"os/exec"
@@ -71,7 +70,7 @@ func (a *App) GetSystemInfo() SystemInfo {
 }
 
 // LaunchGame starts the game
-func (a *App) LaunchGame(username string, ramMB int, useFabric bool, serverURL string) string {
+func (a *App) LaunchGame(username string, ramMB int, useFabric bool) string {
 	a.cmdLock.Lock()
 	if a.cmd != nil {
 		a.cmdLock.Unlock()
@@ -98,16 +97,6 @@ func (a *App) LaunchGame(username string, ramMB int, useFabric bool, serverURL s
 	}
 	if ramMB > sysInfo.MaxRAM {
 		ramMB = sysInfo.MaxRAM
-	}
-
-	// Integrity Check & Remote Update
-	statusCallback := func(msg string) {
-		wailsruntime.EventsEmit(a.ctx, "update-status", msg)
-	}
-
-	if err := integrity.CheckAndUpdate(gameDir, serverURL, statusCallback); err != nil {
-		wailsruntime.EventsEmit(a.ctx, "update-status", fmt.Sprintf("Update Error: %v", err))
-		return fmt.Sprintf("Update Error: %v", err)
 	}
 
 	opts := launcher.LaunchOptions{
