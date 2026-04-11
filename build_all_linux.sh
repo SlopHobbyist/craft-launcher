@@ -30,7 +30,7 @@ fi
 echo "==========================================="
 echo "Building for macOS ARM64 (Apple Silicon)"
 echo "==========================================="
-wails3 build -platform darwin/arm64
+GOOS=darwin GOARCH=arm64 wails3 build
 if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-arm64.app"
 fi
@@ -41,7 +41,7 @@ echo ""
 echo "==========================================="
 echo "Building for macOS x86-64 (Intel)"
 echo "==========================================="
-wails3 build -platform darwin/amd64
+GOOS=darwin GOARCH=amd64 wails3 build
 if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-amd64.app"
 fi
@@ -52,7 +52,7 @@ echo ""
 echo "==========================================="
 echo "Building for Windows x86-64"
 echo "==========================================="
-wails3 build -platform windows/amd64 -ldflags "$LDFLAGS" -o craft-launcher-windows-amd64.exe
+GOOS=windows GOARCH=amd64 wails3 build -ldflags "$LDFLAGS" -o craft-launcher-windows-amd64.exe
 echo "✓ Windows x86-64 build complete"
 echo ""
 
@@ -60,7 +60,7 @@ echo ""
 echo "==========================================="
 echo "Building for Windows x86 (32-bit)"
 echo "==========================================="
-wails3 build -platform windows/386 -ldflags "$LDFLAGS" -o craft-launcher-windows-386.exe
+GOOS=windows GOARCH=386 wails3 build -ldflags "$LDFLAGS" -o craft-launcher-windows-386.exe
 echo "✓ Windows x86 32-bit build complete"
 echo ""
 
@@ -68,7 +68,7 @@ echo ""
 echo "==========================================="
 echo "Building for Windows ARM"
 echo "==========================================="
-wails3 build -platform windows/arm64 -ldflags "$LDFLAGS" -o craft-launcher-windows-arm64.exe
+GOOS=windows GOARCH=arm64 wails3 build -ldflags "$LDFLAGS" -o craft-launcher-windows-arm64.exe
 echo "✓ Windows ARM build complete"
 echo ""
 
@@ -76,7 +76,7 @@ echo ""
 echo "==========================================="
 echo "Building for Linux x86-64"
 echo "==========================================="
-wails3 build -platform linux/amd64 -ldflags "$LDFLAGS" -o craft-launcher-linux-amd64
+GOOS=linux GOARCH=amd64 wails3 build -ldflags "$LDFLAGS" -o craft-launcher-linux-amd64
 echo "✓ Linux x86-64 build complete"
 echo ""
 
@@ -84,7 +84,7 @@ echo ""
 echo "==========================================="
 echo "Building for Linux ARM"
 echo "==========================================="
-wails3 build -platform linux/arm64 -ldflags "$LDFLAGS" -o craft-launcher-linux-arm64
+GOOS=linux GOARCH=arm64 wails3 build -ldflags "$LDFLAGS" -o craft-launcher-linux-arm64
 echo "✓ Linux ARM build complete"
 echo ""
 
