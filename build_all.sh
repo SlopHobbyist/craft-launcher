@@ -30,7 +30,8 @@ fi
 echo "==========================================="
 echo "Building for macOS ARM64 (Apple Silicon)"
 echo "==========================================="
-wails build -platform darwin/arm64if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
+wails build -platform darwin/arm64
+if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-arm64.app"
 fi
 echo "✓ macOS ARM64 build complete"
@@ -40,7 +41,8 @@ echo ""
 echo "==========================================="
 echo "Building for macOS x86-64 (Intel)"
 echo "==========================================="
-wails build -platform darwin/amd64if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
+wails build -platform darwin/amd64
+if [ -d "$BUILD_DIR/$APP_NAME.app" ]; then
     mv "$BUILD_DIR/$APP_NAME.app" "$BUILD_DIR/$APP_NAME-macos-amd64.app"
 fi
 echo "✓ macOS x86-64 build complete"
