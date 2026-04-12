@@ -123,12 +123,29 @@ func Launch(opts LaunchOptions) (*exec.Cmd, error) {
 		pkg.MainClass = fabricMeta.LaunchMeta.MainClass.Client
 	}
 
+	// Load Java agents from .\data\agents
+	var agentArgs []string
+	agentsDir := filepath.Join(opts.GameDir, "agents")
+	if entries, err := os.ReadDir(agentsDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".jar") {
+				agentPath := filepath.Join(agentsDir, entry.Name())
+				agentArgs = append(agentArgs, fmt.Sprintf("-javaagent:%s", agentPath))
+				report(fmt.Sprintf("Loading agent: %s", entry.Name()))
+				reportLog(fmt.Sprintf("Loading agent: %s\n", entry.Name()))
+			}
+		}
+	}
+
 	args := []string{
 		fmt.Sprintf("-Xmx%dM", opts.RamMB),
 		fmt.Sprintf("-Djava.library.path=%s", nativesDir),
+	}
+	args = append(args, agentArgs...)
+	args = append(args,
 		"-cp", realCp,
 		pkg.MainClass,
-	}
+	)
 
 	// Parse minecraftArguments template
 	// e.g. "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userProperties ${user_properties} --userType ${user_type}"
